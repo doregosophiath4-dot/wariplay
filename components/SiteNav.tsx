@@ -1,4 +1,6 @@
 // components/SiteNav.tsx
+'use client'
+
 import Link from 'next/link'
 import {
   HomeIcon, TargetIcon, ListIcon, UserIcon,
@@ -18,11 +20,16 @@ const navItems = [
 
 interface SiteNavProps {
   currentPath: string
+  sticky?: boolean
 }
 
-export default function SiteNav({ currentPath }: SiteNavProps) {
+export default function SiteNav({ currentPath, sticky = false }: SiteNavProps) {
+  const stickyClasses = sticky
+    ? 'sticky top-0 bg-[#0a0a1a]/80 backdrop-blur-xl border-b border-emerald-400/10'
+    : ''
+
   return (
-    <nav className="relative z-10 flex gap-2 px-4 py-3 overflow-x-auto scrollbar-none">
+    <nav className={`relative z-10 flex gap-2 px-4 py-3 overflow-x-auto scrollbar-none ${stickyClasses}`}>
       {navItems.map((item, i) => {
         const isActive = currentPath === item.href
         const isTarget = item.href === '/target'
