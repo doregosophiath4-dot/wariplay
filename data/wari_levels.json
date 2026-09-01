@@ -1,0 +1,47 @@
+[
+  {
+    "id": 1,
+    "img": "/img/1.png",
+    "prix": "Prix de vente : 1000 FCFA",
+    "duree": "Durée : 10 jours",
+    "button_text": "Acheter",
+    "niveau_text": "Niveau : Débutant",
+    "title_prefix": "Wari Level"
+  },
+  {
+    "id": 2,
+    "img": "/img/2.png",
+    "prix": "Prix de vente : 2000 FCFA",
+    "duree": "Durée : 15 jours",
+    "button_text": "Acheter",
+    "niveau_text": "Niveau : Intermédiaire",
+    "title_prefix": "Wari Level"
+  },
+  {
+    "id": 3,
+    "img": "/img/3.png",
+    "prix": "Prix de vente : 3500 FCFA",
+    "duree": "Durée : 20 jours",
+    "button_text": "Acheter",
+    "niveau_text": "Niveau : Avancé",
+    "title_prefix": "Wari Level"
+  },
+  {
+    "id": 4,
+    "img": "/img/4.png",
+    "prix": "Prix de vente : 4500 FCFA",
+    "duree": "Durée : 25 jours",
+    "button_text": "Acheter",
+    "niveau_text": "Niveau : Expert",
+    "title_prefix": "Wari Level"
+  },
+  {
+    "id": 5,
+    "img": "/img/5.png",
+    "prix": "Prix de vente : 6000 FCFA",
+    "duree": "Durée : 31 jours",
+    "button_text": "Acheter",
+    "niveau_text": "Niveau : Légendaire",
+    "title_prefix": "Wari Level"
+  }
+]

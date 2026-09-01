@@ -1,0 +1,65 @@
+[
+  {
+    "id": 1,
+    "img": "img/Cloud Run.png",
+    "name": "Cloud Run",
+    "demo_btn": "Jouer à la démo Cloud Run",
+    "play_btn": "Jouer à Cloud Run",
+    "description": "Cours à travers les nuages et évite les obstacles à toute vitesse",
+    "title_prefix": "Game"
+  },
+  {
+    "id": 2,
+    "img": "img/Memopop.png",
+    "name": "Memo Pop",
+    "demo_btn": "Jouer à la démo Memo Pop",
+    "play_btn": "Jouer à Memo Pop",
+    "description": "Entraîne ta mémoire avec ce jeu de cartes colorées",
+    "title_prefix": "Game"
+  },
+  {
+    "id": 3,
+    "img": "img/Synopop.png",
+    "name": "Syno Pop",
+    "demo_btn": "Jouer à la démo Syno Pop",
+    "play_btn": "Jouer à Syno Pop",
+    "description": "Trouve les synonymes et explose les bulles de mots",
+    "title_prefix": "Game"
+  },
+  {
+    "id": 4,
+    "img": "img/Avoid.png",
+    "name": "Avoid",
+    "demo_btn": "Jouer à la démo Avoid",
+    "play_btn": "Jouer à Avoid",
+    "description": "Évite les pièges à tout prix dans ce jeu de réflexes",
+    "title_prefix": "Game"
+  },
+  {
+    "id": 5,
+    "img": "img/Tropi.png",
+    "name": "Tropi Twist",
+    "demo_btn": "Jouer à la démo Tropi Twist",
+    "play_btn": "Jouer à Tropi Twist",
+    "description": "Un jeu tropical plein de rebondissements et de défis",
+    "title_prefix": "Game"
+  },
+  {
+    "id": 6,
+    "img": "img/Tapline.png",
+    "name": "TapLine",
+    "demo_btn": "Jouer à la démo TapLine",
+    "play_btn": "Jouer à TapLine",
+    "description": "Tape au bon moment pour suivre la ligne sans dévier",
+    "title_prefix": "Game"
+  },
+  {
+    "id": 7,
+    "img": "img/Lettricide1.png",
+    "name": "Lettricide",
+    "demo_btn": "Jouer à la démo Lettricide",
+    "play_btn": "Jouer à Lettricide",
+    "description": "Détruis les lettres ennemies et sauve les mots",
+    "title_prefix": "Game"
+  }
+]

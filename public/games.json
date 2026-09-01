@@ -1,0 +1,10 @@
+{
+  "games": [
+    {
+      "name": "Rot Blade",
+      "image_url": "img/blade.png",
+      "description": "Plongez dans l'enfer des zombies et survivez à des vagues infernales pour accomplir votre quête ultime !",
+      "gains": 50
+    }
+  ]
+}

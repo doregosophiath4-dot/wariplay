@@ -1,0 +1,58 @@
+[
+  {
+    "id": 4,
+    "img": "/img/pack-vies.png",
+    "name": "Pack de vies",
+    "button_text": "Acheter maintenant",
+    "description": "Rechargez votre énergie avec 10 vies supplémentaires.",
+    "title_prefix": "Wari Path"
+  },
+  {
+    "id": 5,
+    "img": "/img/vies-illimitees.png",
+    "name": "Vies illimitées 24h",
+    "button_text": "Acheter maintenant",
+    "description": "Jouez sans limite pendant 24 heures complètes.",
+    "title_prefix": "Wari Path"
+  },
+  {
+    "id": 6,
+    "img": "/img/pass-vip.png",
+    "name": "Pass VIP 7 jours",
+    "button_text": "Acheter maintenant",
+    "description": "Accédez aux avantages VIP pendant 7 jours.",
+    "title_prefix": "Wari Path"
+  },
+  {
+    "id": 7,
+    "img": "/img/badge-or.png",
+    "name": "Badge Or Exclusif",
+    "button_text": "Acheter maintenant",
+    "description": "Un badge doré pour afficher votre statut d'élite.",
+    "title_prefix": "Wari Path"
+  },
+  {
+    "id": 8,
+    "img": "/img/booster-gains.png",
+    "name": "Booster +20% gains",
+    "button_text": "Acheter maintenant",
+    "description": "Gagnez 20% de plus sur chaque partie pendant une durée donnée.",
+    "title_prefix": "Wari Path"
+  },
+  {
+    "id": 9,
+    "img": "/img/pack-saison.png",
+    "name": "Pack Saison",
+    "button_text": "Acheter maintenant",
+    "description": "Contenu exclusif pour la saison en cours.",
+    "title_prefix": "Wari Path"
+  },
+  {
+    "id": 10,
+    "img": "/img/cadeau-special.png",
+    "name": "Cadeau Spécial",
+    "button_text": "Acheter maintenant",
+    "description": "Une surprise unique rien que pour vous.",
+    "title_prefix": "Wari Path"
+  }
+]

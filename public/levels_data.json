@@ -1,0 +1,165 @@
+{
+    "1": {
+        "goals": {
+            "yellow": 25,
+            "green": 30
+        },
+        "grid_type": "full",
+        "obstacles": {
+            "ice": 0,
+            "slime": 0,
+            "locks": 0,
+            "concrete": 0,
+            "sinker": 0
+        },
+        "coups_max": 20,
+        "score_max": 1000
+    },
+    "2": {
+        "goals": {
+            "orange": 50,
+            "pink": 40
+        },
+        "grid_type": "full",
+        "obstacles": {
+            "ice": 0,
+            "slime": 0,
+            "locks": 0,
+            "concrete": 0,
+            "sinker": 0
+        },
+        "coups_max": 25,
+        "score_max": 2000
+    },
+    "3": {
+        "goals": {
+            "blue": 50,
+            "ice": 20
+        },
+        "grid_type": "full",
+        "obstacles": {
+            "ice": 0.25,
+            "slime": 0,
+            "locks": 0,
+            "concrete": 0,
+            "sinker": 0
+        },
+        "coups_max": 30,
+        "score_max": 2500
+    },
+    "4": {
+        "goals": {
+            "ice": 70,
+            "yellow": 30,
+            "light_green": 50
+        },
+        "grid_type": "full",
+        "obstacles": {
+            "ice": 0.35,
+            "slime": 0,
+            "locks": 0,
+            "concrete": 0,
+            "sinker": 0
+        },
+        "coups_max": 30,
+        "score_max": 3000
+    },
+    "5": {
+        "goals": {
+            "ice_break": true,
+            "blue": 30
+        },
+        "grid_type": "random",
+        "obstacles": {
+            "ice": 1.0,
+            "slime": 0,
+            "locks": 0,
+            "concrete": 0,
+            "sinker": 0
+        },
+        "coups_max": 35,
+        "score_max": 3700
+    },
+    "6": {
+        "goals": {
+            "ice": 30,
+            "slime": 20,
+            "pink": 30
+        },
+        "grid_type": "random",
+        "obstacles": {
+            "ice": 0.30,
+            "slime": 0.25,
+            "locks": 0,
+            "concrete": 0,
+            "sinker": 0
+        },
+        "coups_max": 35,
+        "score_max": 3900
+    },
+    "7": {
+        "goals": {
+            "blue": 90,
+            "ice": 60,
+            "orange": 70
+        },
+        "grid_type": "random",
+        "obstacles": {
+            "ice": 0.40,
+            "slime": 0.20,
+            "locks": 0,
+            "concrete": 0,
+            "sinker": 0
+        },
+        "coups_max": 40,
+        "score_max": 4000
+    },
+    "8": {
+        "goals": {
+            "slime": 60,
+            "ice": 30
+        },
+        "grid_type": "random",
+        "obstacles": {
+            "ice": 0.30,
+            "slime": 0.40,
+            "locks": 0,
+            "concrete": 0,
+            "sinker": 0
+        },
+        "coups_max": 45,
+        "score_max": 4200
+    },
+    "9": {
+        "goals": {
+            "locks": 30,
+            "slime": 30,
+            "ice": 30
+        },
+        "grid_type": "random",
+        "obstacles": {
+            "ice": 0.25,
+            "slime": 0.25,
+            "locks": 0.25,
+            "concrete": 0,
+            "sinker": 0
+        },
+        "coups_max": 50,
+        "score_max": 4500
+    },
+    "10": {
+        "goals": {
+            "locks": "all"
+        },
+        "grid_type": "random",
+        "obstacles": {
+            "ice": 0.10,
+            "slime": 0.10,
+            "locks": 0.70,
+            "concrete": 0,
+            "sinker": 0
+        },
+        "coups_max": 55,
+        "score_max": 5000
+    }
+}
