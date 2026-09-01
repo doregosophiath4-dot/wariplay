@@ -1,0 +1,76 @@
+{
+  "shop_items": [
+    {
+      "id": "1",
+      "key": "hilaire",
+      "name": "Vie supplémentaire",
+      "icon": "fas fa-heart",
+      "price": 500,
+      "amount": 5,
+      "description": "Gagne 5 vies supplémentaires"
+    },
+    {
+      "id": "2",
+      "key": "jeicke",
+      "name": "Double pièces",
+      "icon": "fas fa-bolt",
+      "price": 750,
+      "amount": 1,
+      "description": "Multiplie chaque pièce par deux"
+    },
+    {
+      "id": "3",
+      "key": "lucia",
+      "name": "Bouclier",
+      "icon": "fas fa-shield-alt",
+      "price": 600,
+      "amount": 3,
+      "description": "Protection contre un coup"
+    },
+    {
+      "id": "4",
+      "key": "hafsat",
+      "name": "Attaque spéciale",
+      "icon": "fas fa-bomb",
+      "price": 700,
+      "amount": 5,
+      "description": "Attaque spéciale puissante"
+    },
+    {
+      "id": "5",
+      "key": "sophie",
+      "name": "Double saut",
+      "icon": "fas fa-running",
+      "price": 500,
+      "amount": 2,
+      "description": "Permet de sauter deux fois"
+    },
+    {
+      "id": "6",
+      "key": "ulrich",
+      "name": "Non achetable",
+      "icon": "fas fa-lock",
+      "price": 0,
+      "amount": 0,
+      "description": "Achat impossible pour le moment"
+    },
+    {
+      "id": "7",
+      "key": "emma",
+      "name": "Pack 1000 pièces",
+      "icon": "fas fa-coins",
+      "price": 900,
+      "amount": 0,
+      "description": "Obtenir 1000 pièces"
+    },
+    {
+      "id": "8",
+      "key": "lalma",
+      "name": "Pack 10000 pièces",
+      "icon": "fas fa-coins",
+      "price": 1200,
+      "amount": 0,
+      "description": "Obtenir 10000 pièces"
+    }
+  ]
+}
