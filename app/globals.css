@@ -2,6 +2,8 @@
 @import "tailwindcss";
 
 /* Animations pour les halos flous */
+/* globals.css - Ajouter ces animations */
+
 @keyframes float1 {
   0%, 100% { transform: translate(0, 0) scale(1); }
   33% { transform: translate(30px, -20px) scale(1.1); }
@@ -14,6 +16,23 @@
   66% { transform: translate(20px, -30px) scale(1.1); }
 }
 
+@keyframes float3 {
+  0%, 100% { transform: translate(-50%, 0) scale(1); }
+  33% { transform: translate(-50%, -20px) scale(1.15); }
+  66% { transform: translate(-50%, 20px) scale(0.85); }
+}
+
+.animate-float1 {
+  animation: float1 12s ease-in-out infinite;
+}
+
+.animate-float2 {
+  animation: float2 15s ease-in-out infinite;
+}
+
+.animate-float3 {
+  animation: float3 18s ease-in-out infinite;
+}
 /* Animation pour le logo */
 @keyframes logoGlow {
   0%, 100% { 
@@ -124,4 +143,9 @@
 @keyframes float2 {
   0%, 100% { transform: translate(0, 0) scale(1); }
   50% { transform: translate(40px, -30px) scale(1.15); }
+}
+
+/* globals.css, ou un fichier scoped à cette page */
+.grecaptcha-badge {
+  visibility: hidden;
 }

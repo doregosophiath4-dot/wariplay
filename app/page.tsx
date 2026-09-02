@@ -3,11 +3,15 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useAuth } from '@/lib/useAuth'
 
 export default function SplashScreen() {
   const [isVisible, setIsVisible] = useState(true)
   const [countdown, setCountdown] = useState(3)
   const router = useRouter()
+  
+  // Utilisation directe du hook useAuth existant
+  useAuth() // Redirige automatiquement vers /connexion si non authentifié
 
   useEffect(() => {
     const countInterval = setInterval(() => {
@@ -23,7 +27,7 @@ export default function SplashScreen() {
     const timer = setTimeout(() => {
       setIsVisible(false)
       setTimeout(() => {
-        router.push('/connexion')
+        router.push('/home') // Si on arrive ici, c'est que l'utilisateur est connecté
       }, 800)
     }, 3000)
 
@@ -37,56 +41,19 @@ export default function SplashScreen() {
     <AnimatePresence>
       {isVisible && (
         <motion.div
-          className="fixed inset-0 flex justify-center items-center z-[10000] overflow-hidden bg-gradient-to-br from-[#0a0a1a] via-[#0d1b3e] to-[#001f3f]"
+          className="fixed inset-0 flex justify-center items-center z-[10000] overflow-hidden"
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.8, ease: 'easeInOut' }}
         >
-          {/* Cercles decoratifs en arriere-plan */}
-          <div className="absolute inset-0 pointer-events-none">
-            <motion.div
-              className="absolute w-[500px] h-[500px] rounded-full border border-emerald-400/10 bg-[radial-gradient(circle,rgba(0,255,153,0.03)_0%,transparent_70%)] -top-[15%] -right-[10%]"
-              animate={{ scale: [1, 1.2, 1], rotate: [0, 90, 0] }}
-              transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-            />
-            <motion.div
-              className="absolute w-[350px] h-[350px] rounded-full border border-emerald-400/10 bg-[radial-gradient(circle,rgba(0,255,153,0.03)_0%,transparent_70%)] -bottom-[10%] -left-[5%]"
-              animate={{ scale: [1.2, 1, 1.2], rotate: [0, -90, 0] }}
-              transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-            />
-            <motion.div
-              className="absolute w-[250px] h-[250px] rounded-full border border-emerald-400/10 bg-[radial-gradient(circle,rgba(0,255,153,0.03)_0%,transparent_70%)] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-              animate={{ scale: [0.8, 1.1, 0.8] }}
-              transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
-            />
-          </div>
+          {/* Image de fond */}
+          <div 
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+            style={{ backgroundImage: "url('/img/bg.jpg')" }}
+          />
 
-          {/* Particules flottantes */}
-          <div className="absolute inset-0 pointer-events-none">
-            {[...Array(15)].map((_, i) => (
-              <motion.div
-                key={i}
-                className="absolute rounded-full bg-emerald-400 blur-[1px]"
-                style={{
-                  left: `${Math.random() * 100}%`,
-                  top: `${Math.random() * 100}%`,
-                  width: `${Math.random() * 4 + 2}px`,
-                  height: `${Math.random() * 4 + 2}px`
-                }}
-                animate={{
-                  y: [0, -30, 0],
-                  opacity: [0, 0.8, 0],
-                  scale: [0, 1, 0]
-                }}
-                transition={{
-                  duration: Math.random() * 3 + 2,
-                  repeat: Infinity,
-                  delay: Math.random() * 2,
-                  ease: 'easeInOut'
-                }}
-              />
-            ))}
-          </div>
+          {/* Overlay sombre pour la lisibilité */}
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
 
           {/* Contenu principal */}
           <div className="relative z-10 flex flex-col items-center gap-6 sm:gap-8">

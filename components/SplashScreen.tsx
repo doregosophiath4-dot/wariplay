@@ -47,40 +47,11 @@ export default function SplashScreen({ children }: { children: React.ReactNode }
             exit={{ opacity: 0 }}
             transition={{ duration: 0.6, ease: 'easeInOut' }}
           >
-            {/* Cercles décoratifs */}
-            <div className={styles.bgDecor}>
-              <motion.div
-                className={`${styles.bgCircle} ${styles.circle1}`}
-                animate={{ scale: [1, 1.2, 1], rotate: [0, 90, 0] }}
-                transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-              />
-              <motion.div
-                className={`${styles.bgCircle} ${styles.circle2}`}
-                animate={{ scale: [1.2, 1, 1.2], rotate: [0, -90, 0] }}
-                transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-              />
-              <motion.div
-                className={`${styles.bgCircle} ${styles.circle3}`}
-                animate={{ scale: [0.8, 1.1, 0.8] }}
-                transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
-              />
-            </div>
+            {/* Image de fond */}
+            <div className={styles.bgImage} />
 
-            {/* Étoiles scintillantes en CSS pur (pas de Math.random) */}
-            <div className={styles.stars}>
-              <div className={`${styles.star} ${styles.star1}`} />
-              <div className={`${styles.star} ${styles.star2}`} />
-              <div className={`${styles.star} ${styles.star3}`} />
-              <div className={`${styles.star} ${styles.star4}`} />
-              <div className={`${styles.star} ${styles.star5}`} />
-              <div className={`${styles.star} ${styles.star6}`} />
-              <div className={`${styles.star} ${styles.star7}`} />
-              <div className={`${styles.star} ${styles.star8}`} />
-              <div className={`${styles.star} ${styles.star9}`} />
-              <div className={`${styles.star} ${styles.star10}`} />
-              <div className={`${styles.star} ${styles.star11}`} />
-              <div className={`${styles.star} ${styles.star12}`} />
-            </div>
+            {/* Overlay sombre */}
+            <div className={styles.overlay} />
 
             {/* Contenu principal */}
             <div className={styles.content}>
