@@ -1,802 +1,1700 @@
-'use client'
+'use client';
+// @ts-nocheck
+/* eslint-disable */
 
-import { useState, useEffect, useRef } from 'react'
-import { usePathname } from 'next/navigation'
-import { motion, AnimatePresence } from 'framer-motion'
-import { fetchWithAllTokens, initAll } from '@/lib/api'
-import { useAuth } from '@/lib/useAuth'
+import { useEffect } from 'react';
 
-// =====================================================
-// SVG ICONS
-// =====================================================
-const HeartIcon = ({ filled = true, className = "" }: { filled?: boolean; className?: string }) => (
-  <svg viewBox="0 0 24 24" className={className} fill="none" width="18" height="18">
-    <path
-      d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.27 2 8.5 2 5.41 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.08C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.41 22 8.5c0 3.77-3.4 6.86-8.55 11.53L12 21.35z"
-      fill={filled ? "#E53E3E" : "none"}
-      stroke={filled ? "#E53E3E" : "#4A4A6A"}
-      strokeWidth="1.5"
-    />
-  </svg>
-)
+// ============================================================
+// Composant Next.js — Galaxy Shooter
+// Port fidèle du jeu HTML/CSS/JS original en TSX.
+// Toute la logique du jeu est conservée à l'identique.
+// Les images sont désormais servies depuis /public/galaxy/
+// (auparavant /Assets/).
+// ============================================================
 
-const CoinIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="8" cy="8" r="6" />
-    <path d="M18.09 10.37A6 6 0 1 1 10.34 18" />
-    <path d="M7 6h1v4" />
-  </svg>
-)
+export default function GalaxyShooterGame() {
+    useEffect(() => {
+        // ============================================================
+        // Références de nettoyage (React / Next.js)
+        // ============================================================
+        let animationFrameId: number | null = null;
+        const cleanupFns: Array<() => void> = [];
 
-const PlayIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-    <polygon points="5 3 19 12 5 21 5 3" />
-  </svg>
-)
+        // ============================================================
+        // 0. DÉTECTION DE L'APPAREIL ET CHARGEMENT DU FOND
+        // ============================================================
 
-const CloseIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="18" y1="6" x2="6" y2="18" />
-    <line x1="6" y1="6" x2="18" y2="18" />
-  </svg>
-)
+        function detectDevice() {
+            const ua = navigator.userAgent || navigator.vendor || (window as any).opera;
+            const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile/i.test(ua.toLowerCase());
+            const isSmallScreen = window.innerWidth < 768;
+            const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+            const isMobileDevice = isMobile || (isSmallScreen && isTouchDevice);
 
-const MinusIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="5" y1="12" x2="19" y2="12" />
-  </svg>
-)
-
-const PlusIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="12" y1="5" x2="12" y2="19" />
-    <line x1="5" y1="12" x2="19" y2="12" />
-  </svg>
-)
-
-const ShieldIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-  </svg>
-)
-
-const LightningIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-  </svg>
-)
-
-const CheckCircleIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-    <polyline points="22 4 12 14.01 9 11.01" />
-  </svg>
-)
-
-const UserIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-    <circle cx="12" cy="7" r="4" />
-  </svg>
-)
-
-// =====================================================
-// FONCTION D'EXTRACTION DU NOM BRUT DU JEU DEPUIS L'URL
-// =====================================================
-function extractRawGameNameFromUrl(url: string): string {
-  let path = url
-
-  if (path.startsWith('/')) {
-    path = path.substring(1)
-  }
-
-  if (path.endsWith('/')) {
-    path = path.slice(0, -1)
-  }
-
-  // Supprimer le "1" final s'il existe (ex: falling_tiles1 → falling_tiles)
-  if (path.endsWith('1')) {
-    path = path.slice(0, -1)
-  }
-
-  return path
-}
-
-// =====================================================
-// FONCTION DE NORMALISATION POUR L'AFFICHAGE
-// =====================================================
-function normalizeGameNameForDisplay(rawName: string): string {
-  if (!rawName || rawName.length === 0) {
-    return 'Jeu Inconnu'
-  }
-
-  let displayName = rawName.replace(/_/g, ' ')
-  displayName = displayName
-    .split(' ')
-    .map((word) => {
-      if (word.length === 0) return ''
-      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-    })
-    .join(' ')
-  displayName = displayName.trim()
-
-  if (displayName.length === 0) {
-    return 'Jeu Inconnu'
-  }
-
-  return displayName
-}
-
-// =====================================================
-// FONCTION POUR OBTENIR LE HOST DYNAMIQUE
-// =====================================================
-function getDynamicHost(): string {
-  if (typeof window !== 'undefined') {
-    const protocol = window.location.protocol
-    const host = window.location.host
-    return `${protocol}//${host}`
-  }
-  // Fallback pour le rendu serveur
-  return 'http://localhost:3000'
-}
-
-// =====================================================
-// COMPOSANT PRINCIPAL
-// =====================================================
-export default function GamePage() {
-  useAuth()
-
-  const pathname = usePathname()
-
-  // Nom brut extrait de l'URL (ex: "falling_tiles")
-  const rawGameName = extractRawGameNameFromUrl(pathname)
-
-  // Host dynamique
-  const [dynamicHost, setDynamicHost] = useState<string>('http://localhost:3000')
-
-  // États
-  const [gameName, setGameName] = useState<string>('Chargement...')
-  const [userName, setUserName] = useState<string>('Wari User')
-  const [gameImageUrl, setGameImageUrl] = useState<string>('')
-  const [dataLoaded, setDataLoaded] = useState(false)
-  const [loadError, setLoadError] = useState(false)
-
-  const SOLDE_INITIAL = 30000
-  const VIES_INITIALES = 3
-  const MULTIPLICATEUR = 2
-
-  const [solde, setSolde] = useState(SOLDE_INITIAL)
-  const [vies, setVies] = useState(VIES_INITIALES)
-  const [showPopup, setShowPopup] = useState(false)
-  const [mise, setMise] = useState(100)
-  const [confirmLoading, setConfirmLoading] = useState(false)
-  const [success, setSuccess] = useState(false)
-
-  // État pour l'iframe
-  const [showGameIframe, setShowGameIframe] = useState(false)
-  const [gameIframeUrl, setGameIframeUrl] = useState('')
-
-  const [inputFocused, setInputFocused] = useState(false)
-  const [imageError, setImageError] = useState(false)
-  const canvasRef = useRef<HTMLCanvasElement | null>(null)
-
-  const MISES_RAPIDES = [100, 500, 1000, 2500, 5000, 10000]
-  const gainPotentiel = Math.floor(mise * MULTIPLICATEUR)
-
-  // Initialiser le host dynamique côté client
-  useEffect(() => {
-    setDynamicHost(getDynamicHost())
-  }, [])
-
-  // =====================================================
-  // CHARGEMENT DES INFOS DU JEU DEPUIS LE BACKEND
-  // =====================================================
-  useEffect(() => {
-    let cancelled = false
-
-    async function loadGameInfo() {
-      if (!rawGameName || rawGameName.length === 0) {
-        setGameName('Jeu Inconnu')
-        setDataLoaded(true)
-        return
-      }
-
-      try {
-        await initAll()
-
-        const response = await fetchWithAllTokens('/api/game-info', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: rawGameName })
-        })
-
-        if (!response.ok) {
-          throw new Error('Erreur lors du chargement des informations du jeu')
+            return {
+                isMobile: isMobileDevice,
+                isDesktop: !isMobileDevice,
+                isTouch: isTouchDevice,
+                screenWidth: window.innerWidth,
+                screenHeight: window.innerHeight
+            };
         }
 
-        const data = await response.json()
+        // Charger l'image de fond appropriée depuis le dossier galaxy/
+        function loadBackgroundImage(deviceInfo: any) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                const imagePath = deviceInfo.isMobile ? '/galaxy/mobile.webp' : '/galaxy/desktop.webp';
 
-        if (cancelled) return
+                img.onload = () => {
+                    document.body.style.backgroundImage = `url('${imagePath}')`;
+                    console.log(`✅ Fond chargé: ${imagePath}`);
+                    resolve(img);
+                };
 
-        if (data.error) {
-          console.error('Erreur API:', data.error)
-          setGameName(normalizeGameNameForDisplay(rawGameName))
-          setGameImageUrl(`/img/${rawGameName}.png`)
-        } else {
-          if (data.game_name) {
-            setGameName(data.game_name)
-          } else {
-            setGameName(normalizeGameNameForDisplay(rawGameName))
-          }
+                img.onerror = () => {
+                    console.warn(`❌ Impossible de charger ${imagePath}, utilisation de la couleur de fond par défaut.`);
+                    document.body.style.backgroundColor = '#0a0a0a';
+                    document.body.style.backgroundImage = 'none';
+                    resolve(null);
+                };
 
-          if (data.user_name) {
-            setUserName(data.user_name)
-          }
-
-          if (data.image_url) {
-            setGameImageUrl(data.image_url)
-          } else {
-            setGameImageUrl(`/img/${rawGameName}.png`)
-          }
+                img.src = imagePath;
+            });
         }
 
-        setDataLoaded(true)
-      } catch (error) {
-        console.error('Erreur chargement jeu:', error)
-        if (!cancelled) {
-          setGameName(normalizeGameNameForDisplay(rawGameName))
-          setGameImageUrl(`/img/${rawGameName}.png`)
-          setLoadError(true)
-          setDataLoaded(true)
+        // Détecter l'appareil et charger le fond
+        const deviceInfo = detectDevice();
+        console.log('📱 Appareil détecté:', deviceInfo.isMobile ? 'Mobile' : 'Desktop');
+        console.log('👆 Touch:', deviceInfo.isTouch);
+        console.log('📐 Dimensions:', deviceInfo.screenWidth, 'x', deviceInfo.screenHeight);
+
+        // Charger l'image de fond
+        let backgroundLoaded = false;
+        loadBackgroundImage(deviceInfo).then(() => {
+            backgroundLoaded = true;
+            if (assetsLoaded === totalAssetsToLoad) {
+                hideLoading();
+            }
+        });
+
+        // Réagir au redimensionnement
+        const handleBgResize = () => {
+            const newDeviceInfo = detectDevice();
+            if (newDeviceInfo.isMobile !== deviceInfo.isMobile) {
+                loadBackgroundImage(newDeviceInfo);
+            }
+        };
+        window.addEventListener('resize', handleBgResize);
+        cleanupFns.push(() => window.removeEventListener('resize', handleBgResize));
+
+        // Fonction pour cacher l'écran de chargement
+        function hideLoading() {
+            const loading = document.getElementById('loading');
+            if (loading) {
+                loading.classList.add('hidden');
+                setTimeout(() => {
+                    loading.style.display = 'none';
+                }, 500);
+            }
         }
-      }
-    }
 
-    loadGameInfo()
+        // ============================================================
+        // 1. CONFIGURATION RESPONSIVE
+        // ============================================================
 
-    return () => {
-      cancelled = true
-    }
-  }, [rawGameName])
+        const canvas = document.getElementById('gameCanvas') as HTMLCanvasElement;
+        const ctx = canvas.getContext('2d')!;
 
-  // =====================================================
-  // CANVAS BACKGROUND
-  // =====================================================
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
+        const BASE_WIDTH = 464;
+        const BASE_HEIGHT = 688;
+        const GAME_RATIO = BASE_WIDTH / BASE_HEIGHT;
 
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
+        let CANVAS_WIDTH = 0;
+        let CANVAS_HEIGHT = 0;
+        let SCALE = 1;
 
-    const resize = () => {
-      canvas.width = window.innerWidth
-      canvas.height = window.innerHeight
-    }
+        function resizeCanvas() {
+            const container = document.getElementById('gameContainer')!;
+            const containerWidth = container.clientWidth;
+            const containerHeight = container.clientHeight;
 
-    resize()
-    window.addEventListener('resize', resize)
+            let width = containerWidth;
+            let height = containerHeight;
 
-    let time = 0
+            if (width / height > GAME_RATIO) {
+                width = height * GAME_RATIO;
+            } else {
+                height = width / GAME_RATIO;
+            }
 
-    const draw = () => {
-      if (!ctx || !canvas) return
+            const padding = 0.92;
+            width *= padding;
+            height *= padding;
 
-      ctx.fillStyle = 'rgba(10, 10, 26, 0.15)'
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
-      time += 0.008
+            CANVAS_WIDTH = Math.floor(width);
+            CANVAS_HEIGHT = Math.floor(height);
+            SCALE = CANVAS_WIDTH / BASE_WIDTH;
 
-      // Vagues
-      for (let waveIndex = 0; waveIndex < 5; waveIndex++) {
-        ctx.beginPath()
-        ctx.strokeStyle = `hsla(${200 + waveIndex * 15}, 80%, ${45 + waveIndex * 5}%, ${0.06 + waveIndex * 0.02})`
-        ctx.lineWidth = 1.2 + waveIndex * 0.2
-
-        for (let x = 0; x < canvas.width; x += 5) {
-          const y =
-            canvas.height * 0.4 +
-            Math.sin(x * 0.003 + time * 0.5 + waveIndex) * 50 +
-            Math.cos(x * 0.001 + time * 0.3) * 70 +
-            Math.sin(x * 0.005 + waveIndex * 1.5) * 30 +
-            waveIndex * 55
-
-          if (x === 0) {
-            ctx.moveTo(x, y)
-          } else {
-            ctx.lineTo(x, y)
-          }
+            canvas.width = CANVAS_WIDTH;
+            canvas.height = CANVAS_HEIGHT;
+            canvas.style.width = CANVAS_WIDTH + 'px';
+            canvas.style.height = CANVAS_HEIGHT + 'px';
         }
-        ctx.stroke()
-      }
 
-      // Particules
-      for (let i = 0; i < 12; i++) {
-        const px = (Math.sin(time * 0.7 + i * 2.1) * 0.5 + 0.5) * canvas.width
-        const py = (Math.cos(time * 0.5 + i * 1.7) * 0.5 + 0.5) * canvas.height
-        const radius = 1 + Math.sin(time * 2 + i) * 0.5
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        cleanupFns.push(() => window.removeEventListener('resize', resizeCanvas));
 
-        ctx.beginPath()
-        ctx.arc(px, py, radius, 0, Math.PI * 2)
-        ctx.fillStyle = `hsla(${180 + i * 20}, 80%, 60%, ${0.08 + Math.sin(time + i) * 0.04})`
-        ctx.fill()
-      }
+        const handleOrientationChange = () => {
+            setTimeout(resizeCanvas, 300);
+        };
+        window.addEventListener('orientationchange', handleOrientationChange);
+        cleanupFns.push(() => window.removeEventListener('orientationchange', handleOrientationChange));
 
-      requestAnimationFrame(draw)
-    }
+        // ============================================================
+        // 2. CHARGEMENT DES ASSETS
+        // ============================================================
 
-    draw()
+        const assets: any = {
+            fond: null,
+            joueurFrames: [],
+            monstreFrames: [],
+            tir: null
+        };
 
-    return () => window.removeEventListener('resize', resize)
-  }, [])
+        let assetsLoaded = 0;
+        const totalAssetsToLoad = 3;
 
-  // =====================================================
-  // HANDLERS
-  // =====================================================
-  const openPopup = () => {
-    setShowPopup(true)
-    setSuccess(false)
-  }
-
-  const closePopup = () => {
-    setShowPopup(false)
-  }
-
-  const handleMiseChange = (val: number) => {
-    const clamped = Math.max(100, Math.min(val, solde))
-    setMise(clamped)
-  }
-
-  const handleConfirm = () => {
-    if (mise > solde || vies <= 0) return
-
-    setConfirmLoading(true)
-
-    setTimeout(() => {
-      setSolde((s) => s - mise)
-      setConfirmLoading(false)
-      setSuccess(true)
-
-      // Après 2 secondes supplémentaires, afficher l'iframe du jeu
-      setTimeout(() => {
-        // Construire l'URL dynamique de l'iframe
-        // Exemple : http://localhost:3000/games/falling_tiles
-        const host = getDynamicHost()
-        const iframeUrl = `${host}/games/${rawGameName}/`
-
-        setGameIframeUrl(iframeUrl)
-        setShowGameIframe(true)
-        setShowPopup(false)
-      }, 2000)
-    }, 1800)
-  }
-
-  // Fermer l'iframe et revenir à la page de mise
-  const closeGameIframe = () => {
-    setShowGameIframe(false)
-    setGameIframeUrl('')
-  }
-
-  // Fermer avec Escape
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        if (showGameIframe) {
-          closeGameIframe()
-        } else {
-          closePopup()
+        function checkAllLoaded() {
+            assetsLoaded++;
+            if (assetsLoaded === totalAssetsToLoad) {
+                if (backgroundLoaded) {
+                    hideLoading();
+                }
+                initGame();
+            }
         }
-      }
-    }
 
-    window.addEventListener("keydown", handler)
-    return () => window.removeEventListener("keydown", handler)
-  }, [showGameIframe])
+        // Fond
+        const COLS_FOND = 8;
+        const ROWS_FOND = 19;
+        const TOTAL_FRAMES_FOND = COLS_FOND * ROWS_FOND;
+        const framesFond: HTMLCanvasElement[] = [];
 
-  // Formater en XOF
-  const formatXOF = (n: number) => {
-    return n.toLocaleString("fr-FR") + " XOF"
-  }
+        const spritesheetFond = new Image();
+        spritesheetFond.src = '/galaxy/galaxy_spritesheet.webp';
+        spritesheetFond.onload = () => {
+            for (let row = 0; row < ROWS_FOND; row++) {
+                for (let col = 0; col < COLS_FOND; col++) {
+                    let x = col * BASE_WIDTH;
+                    let y = row * BASE_HEIGHT;
+                    let offScreenCanvas = document.createElement('canvas');
+                    offScreenCanvas.width = BASE_WIDTH;
+                    offScreenCanvas.height = BASE_HEIGHT;
+                    let offCtx = offScreenCanvas.getContext('2d')!;
+                    offCtx.drawImage(spritesheetFond, x, y, BASE_WIDTH, BASE_HEIGHT, 0, 0, BASE_WIDTH, BASE_HEIGHT);
+                    framesFond.push(offScreenCanvas);
+                }
+            }
+            checkAllLoaded();
+        };
+        spritesheetFond.onerror = () => {
+            console.warn('❌ Impossible de charger le spritesheet de fond');
+            checkAllLoaded();
+        };
 
-  // =====================================================
-  // RENDU DE L'IFRAME DU JEU
-  // =====================================================
-  if (showGameIframe && gameIframeUrl) {
+        // Joueur
+        const JOUEUR_FRAME_START = 1;
+        const JOUEUR_FRAME_END = 8;
+        const JOUEUR_FRAME_COUNT = JOUEUR_FRAME_END - JOUEUR_FRAME_START + 1;
+        let joueurLoadedCount = 0;
+        const rawJoueurFrames: HTMLImageElement[] = [];
+
+        for (let i = JOUEUR_FRAME_START; i <= JOUEUR_FRAME_END; i++) {
+            let img = new Image();
+            img.src = `/galaxy/frames_joueur/${i}.webp`;
+            rawJoueurFrames.push(img);
+            img.onload = () => {
+                joueurLoadedCount++;
+                if (joueurLoadedCount === JOUEUR_FRAME_COUNT) {
+                    const SCALE_FACTOR = 0.3;
+                    rawJoueurFrames.forEach(f => {
+                        let w = f.width * SCALE_FACTOR;
+                        let h = f.height * SCALE_FACTOR;
+                        (window as any).NEW_JOUEUR_WIDTH = w;
+                        (window as any).NEW_JOUEUR_HEIGHT = h;
+                        let c = document.createElement('canvas');
+                        c.width = w;
+                        c.height = h;
+                        let cx = c.getContext('2d')!;
+                        cx.drawImage(f, 0, 0, w, h);
+                        assets.joueurFrames.push(c);
+                    });
+                    checkAllLoaded();
+                }
+            };
+            img.onerror = () => {
+                joueurLoadedCount++;
+                if (joueurLoadedCount === JOUEUR_FRAME_COUNT) {
+                    checkAllLoaded();
+                }
+            };
+        }
+
+        // Monstres
+        const MONSTRE_FRAME_START = 0;
+        const MONSTRE_FRAME_END = 119;
+        const MONSTRE_FRAME_COUNT = MONSTRE_FRAME_END - MONSTRE_FRAME_START + 1;
+        let monstreLoadedCount = 0;
+        const rawMonstreFrames: HTMLImageElement[] = [];
+
+        function padZero(num: number, size: number) {
+            let s = num + '';
+            while (s.length < size) s = '0' + s;
+            return s;
+        }
+
+        for (let i = MONSTRE_FRAME_START; i <= MONSTRE_FRAME_END; i++) {
+            let img = new Image();
+            let frameName = `frame_${padZero(i, 4)}.webp`;
+            img.src = `/galaxy/mes_frames/${frameName}`;
+            rawMonstreFrames.push(img);
+            img.onload = () => {
+                monstreLoadedCount++;
+                if (monstreLoadedCount === MONSTRE_FRAME_COUNT) {
+                    const MONSTRE_SCALE = 0.25;
+                    rawMonstreFrames.forEach(f => {
+                        let w = f.width * MONSTRE_SCALE;
+                        let h = f.height * MONSTRE_SCALE;
+                        (window as any).MONSTRE_WIDTH = w;
+                        (window as any).MONSTRE_HEIGHT = h;
+                        let c = document.createElement('canvas');
+                        c.width = w;
+                        c.height = h;
+                        let cx = c.getContext('2d')!;
+                        cx.drawImage(f, 0, 0, w, h);
+                        assets.monstreFrames.push(c);
+                    });
+                    checkAllLoaded();
+                }
+            };
+            img.onerror = () => {
+                monstreLoadedCount++;
+                if (monstreLoadedCount === MONSTRE_FRAME_COUNT) {
+                    checkAllLoaded();
+                }
+            };
+        }
+
+        (window as any).MONSTRE_WIDTH = 30;
+        (window as any).MONSTRE_HEIGHT = 30;
+        (window as any).NEW_JOUEUR_WIDTH = 40;
+        (window as any).NEW_JOUEUR_HEIGHT = 40;
+
+        // Tir
+        const tirImage = new Image();
+        tirImage.src = '/galaxy/tire.webp';
+        tirImage.onload = () => {
+            const TIR_SCALE = 0.15;
+            (window as any).TIR_WIDTH = tirImage.width * TIR_SCALE;
+            (window as any).TIR_HEIGHT = tirImage.height * TIR_SCALE;
+            let c = document.createElement('canvas');
+            c.width = (window as any).TIR_WIDTH;
+            c.height = (window as any).TIR_HEIGHT;
+            c.getContext('2d')!.drawImage(tirImage, 0, 0, (window as any).TIR_WIDTH, (window as any).TIR_HEIGHT);
+            assets.tir = c;
+            checkAllLoaded();
+        };
+        tirImage.onerror = () => {
+            console.warn("❌ Impossible de charger l'image de tir");
+            checkAllLoaded();
+        };
+
+        // ============================================================
+        // 3. CLASSES DU JEU
+        // ============================================================
+
+        function scaleX(x: number) { return x * SCALE; }
+        function scaleY(y: number) { return y * SCALE; }
+        function scaleSize(s: number) { return s * SCALE; }
+
+        class Explosion {
+            x: number; y: number; currentFrame: number; animationTimer: number;
+            frameDuration: number; finished: boolean; frames: HTMLCanvasElement[];
+
+            constructor(x: number, y: number) {
+                this.x = x;
+                this.y = y;
+                this.currentFrame = 0;
+                this.animationTimer = 0;
+                this.frameDuration = 50;
+                this.finished = false;
+                this.frames = [];
+                this.createExplosionFrames();
+            }
+
+            createExplosionFrames() {
+                const colors = ['#ffff00', '#ffc800', '#ff6400', '#ff3200', '#960000'];
+                const sizes = [10, 25, 40, 50, 55];
+
+                for (let i = 0; i < colors.length; i++) {
+                    let size = sizes[i] * SCALE;
+                    let c = document.createElement('canvas');
+                    c.width = size * 2;
+                    c.height = size * 2;
+                    let cx = c.getContext('2d')!;
+
+                    cx.fillStyle = colors[i];
+                    cx.beginPath();
+                    cx.arc(size, size, size, 0, Math.PI * 2);
+                    cx.fill();
+
+                    if (i < colors.length - 1) {
+                        cx.fillStyle = '#ffffff';
+                        cx.beginPath();
+                        cx.arc(size, size, size * 0.7, 0, Math.PI * 2);
+                        cx.fill();
+                    }
+
+                    if (i > 1) {
+                        cx.fillStyle = '#ffffff';
+                        for (let p = 0; p < 5; p++) {
+                            let px = size + (Math.random() * size - size / 2);
+                            let py = size + (Math.random() * size - size / 2);
+                            cx.beginPath();
+                            cx.arc(px, py, 3 * SCALE, 0, Math.PI * 2);
+                            cx.fill();
+                        }
+                    }
+                    this.frames.push(c);
+                }
+            }
+
+            update(currentTime: number) {
+                if (!this.finished) {
+                    if (currentTime - this.animationTimer >= this.frameDuration) {
+                        this.currentFrame++;
+                        this.animationTimer = currentTime;
+                        if (this.currentFrame >= this.frames.length) {
+                            this.finished = true;
+                        }
+                    }
+                }
+            }
+
+            draw(ctx: CanvasRenderingContext2D) {
+                if (!this.finished && this.frames[this.currentFrame]) {
+                    let frame = this.frames[this.currentFrame];
+                    ctx.drawImage(frame, this.x - frame.width / 2, this.y - frame.height / 2);
+                }
+            }
+        }
+
+        class Tir {
+            x: number; y: number; speed: number; width: number; height: number;
+
+            constructor(x: number, y: number) {
+                const scaledWidth = scaleSize((window as any).NEW_JOUEUR_WIDTH);
+                const scaledTirWidth = scaleSize((window as any).TIR_WIDTH);
+                const scaledTirHeight = scaleSize((window as any).TIR_HEIGHT);
+
+                this.x = x + (scaledWidth / 2) - (scaledTirWidth / 2);
+                this.y = y - scaledTirHeight;
+                this.speed = 8 * SCALE;
+                this.width = scaledTirWidth;
+                this.height = scaledTirHeight;
+            }
+
+            update() {
+                this.y -= this.speed;
+            }
+
+            draw(ctx: CanvasRenderingContext2D) {
+                if (assets.tir) {
+                    const scaledWidth = scaleSize((window as any).TIR_WIDTH);
+                    const scaledHeight = scaleSize((window as any).TIR_HEIGHT);
+                    ctx.drawImage(assets.tir, this.x, this.y, scaledWidth, scaledHeight);
+                }
+            }
+
+            getRect() {
+                return { x: this.x, y: this.y, width: this.width, height: this.height };
+            }
+        }
+
+        class Monstre {
+            x: number; y: number; difficultyScore: number; currentFrame: number;
+            animationTimer: number; width: number; height: number; behaviorType: string;
+            baseSpeed!: number; currentSpeed!: number;
+            zigzagAmplitude?: number; zigzagFrequency?: number; initialX?: number; timeOffset?: number;
+            homingStrength?: number; waveAmplitude?: number; waveFrequency?: number; acceleration?: number;
+
+            constructor(x: number, y: number, difficultyScore: number) {
+                this.x = x;
+                this.y = y;
+                this.difficultyScore = difficultyScore;
+                this.currentFrame = 0;
+                this.animationTimer = 0;
+                this.width = scaleSize((window as any).MONSTRE_WIDTH);
+                this.height = scaleSize((window as any).MONSTRE_HEIGHT);
+
+                this.behaviorType = this.determineBehavior();
+                this.calculateAttributes();
+            }
+
+            determineBehavior() {
+                const behaviors = ['straight', 'zigzag', 'homing', 'wave', 'accelerating'];
+                let weights = [0.5, 0.2, 0.1, 0.15, 0.05];
+                if (this.difficultyScore > 500) weights = [0.2, 0.25, 0.3, 0.15, 0.1];
+                else if (this.difficultyScore > 200) weights = [0.3, 0.3, 0.2, 0.15, 0.05];
+
+                let randomVal = Math.random();
+                let cumulative = 0;
+                for (let i = 0; i < weights.length; i++) {
+                    cumulative += weights[i];
+                    if (randomVal <= cumulative) return behaviors[i];
+                }
+                return 'straight';
+            }
+
+            calculateAttributes() {
+                let baseSpeed = 1.5 * SCALE;
+                let difficultyMultiplier = 1 + (this.difficultyScore / 200);
+                let randomFactor = 0.8 + Math.random() * 0.7;
+
+                const modifiers: any = { straight: 1.0, zigzag: 0.8, homing: 1.2, wave: 0.9, accelerating: 0.5 };
+
+                this.baseSpeed = baseSpeed * difficultyMultiplier * randomFactor;
+                this.currentSpeed = this.baseSpeed * modifiers[this.behaviorType];
+
+                const ampScale = SCALE;
+                if (this.behaviorType === 'zigzag') {
+                    this.zigzagAmplitude = (30 + Math.random() * 50) * ampScale;
+                    this.zigzagFrequency = 0.02 + Math.random() * 0.03;
+                    this.initialX = this.x;
+                    this.timeOffset = Math.random() * Math.PI * 2;
+                } else if (this.behaviorType === 'homing') {
+                    this.homingStrength = 0.01 + Math.random() * 0.02;
+                } else if (this.behaviorType === 'wave') {
+                    this.waveAmplitude = (50 + Math.random() * 50) * ampScale;
+                    this.waveFrequency = 0.01 + Math.random() * 0.02;
+                    this.timeOffset = Math.random() * Math.PI * 2;
+                } else if (this.behaviorType === 'accelerating') {
+                    this.acceleration = 0.01 + Math.random() * 0.02;
+                }
+            }
+
+            update(currentTime: number, frameDuration: number, joueurX: number | undefined) {
+                if (currentTime - this.animationTimer >= frameDuration) {
+                    if (assets.monstreFrames.length > 0) {
+                        this.currentFrame = (this.currentFrame + 1) % assets.monstreFrames.length;
+                    }
+                    this.animationTimer = currentTime;
+                }
+
+                const canvasWidth = CANVAS_WIDTH;
+
+                if (this.behaviorType === 'straight') {
+                    this.y += this.currentSpeed;
+                } else if (this.behaviorType === 'zigzag') {
+                    this.y += this.currentSpeed;
+                    this.x = (this.initialX as number) + Math.sin(this.y * (this.zigzagFrequency as number) + (this.timeOffset as number)) * (this.zigzagAmplitude as number);
+                } else if (this.behaviorType === 'homing' && joueurX !== undefined) {
+                    this.y += this.currentSpeed;
+                    let dx = joueurX - this.x;
+                    this.x += dx * (this.homingStrength as number);
+                    this.x = Math.max(0, Math.min(this.x, canvasWidth - this.width));
+                } else if (this.behaviorType === 'wave') {
+                    this.y += this.currentSpeed;
+                    this.x = (canvasWidth / 2) + Math.sin(this.y * (this.waveFrequency as number) + (this.timeOffset as number)) * (this.waveAmplitude as number);
+                    this.x = Math.max(0, Math.min(this.x, canvasWidth - this.width));
+                } else if (this.behaviorType === 'accelerating') {
+                    this.currentSpeed += (this.acceleration as number);
+                    this.y += this.currentSpeed;
+                }
+            }
+
+            draw(ctx: CanvasRenderingContext2D) {
+                if (assets.monstreFrames.length > 0 && assets.monstreFrames[this.currentFrame]) {
+                    const w = scaleSize((window as any).MONSTRE_WIDTH);
+                    const h = scaleSize((window as any).MONSTRE_HEIGHT);
+                    ctx.drawImage(assets.monstreFrames[this.currentFrame], Math.floor(this.x), Math.floor(this.y), w, h);
+                }
+            }
+
+            getRect() {
+                return { x: Math.floor(this.x), y: Math.floor(this.y), width: this.width, height: this.height };
+            }
+
+            isOffScreen() {
+                return this.y > CANVAS_HEIGHT + 100;
+            }
+        }
+
+        class DifficultyManager {
+            difficultyScore = 0;
+            monstresTues = 0;
+            tempsSurvie = 0;
+            precisionTir = 0;
+            tirsEffectues = 0;
+            tirsReussis = 0;
+            spawnRateMultiplier = 1.0;
+            monsterSpeedMultiplier = 1.0;
+            maxMonstersMultiplier = 1.0;
+
+            update(dt: number, monstresTuesDelta = 0, tirReussi = false, tirEffectue = false) {
+                this.monstresTues += monstresTuesDelta;
+                this.tempsSurvie += dt;
+                if (tirEffectue) this.tirsEffectues++;
+                if (tirReussi) this.tirsReussis++;
+
+                if (this.tirsEffectues > 0) {
+                    this.precisionTir = this.tirsReussis / this.tirsEffectues;
+                }
+
+                let diffKills = this.monstresTues * 2;
+                let diffTime = this.tempsSurvie * 0.5;
+                let diffAcc = (this.precisionTir > 0) ? (1 - this.precisionTir) * 100 : 0;
+                let accBonus = (this.precisionTir > 0.7 && this.tirsEffectues > 20) ? 50 : 0;
+
+                this.difficultyScore = Math.floor(diffKills + diffTime + diffAcc + accBonus);
+                this.spawnRateMultiplier = Math.min(3.0, 1 + (this.difficultyScore / 300));
+                this.maxMonstersMultiplier = Math.min(4.0, 1 + (this.difficultyScore / 200));
+            }
+
+            getSpawnDelay(baseDelay: number) {
+                return Math.max(200, baseDelay / this.spawnRateMultiplier);
+            }
+
+            getMaxMonsters(baseMax: number) {
+                return Math.floor(baseMax * this.maxMonstersMultiplier);
+            }
+        }
+
+        // ============================================================
+        // 4. VARIABLES GLOBALES
+        // ============================================================
+
+        let gameState = 'START';
+        let difficultyManager = new DifficultyManager();
+        let joueurX = 0, joueurY = 0;
+        let joueurVelocityX = 0;
+        let joueurSpeed = 0;
+        let monstres: any[] = [];
+        let tirs: any[] = [];
+        let explosions: any[] = [];
+        let score = 0;
+
+        let currentFrameFond = 0;
+        let currentFrameJoueur = 0;
+        let lastFrameTime = 0;
+        const ANIMATION_FPS = 30;
+        const frameDuration = 1000 / ANIMATION_FPS;
+
+        let baseSpawnDelay = 800;
+        let baseMaxMonsters = 8;
+        let lastSpawnTime = 0;
+        let tirDelay = 250;
+        let lastTirTime = 0;
+
+        let touchLeft = false;
+        let touchRight = false;
+
+        // ============================================================
+        // 4bis. SYSTÈME DE MISE
+        // ============================================================
+
+        const MIN_BET = 100;
+        const MAX_BET = 500;
+        let balance = 10000;
+        let currentBet = 0;
+        let betPopupOpen = false;
+
+        const betOverlay = document.getElementById('betOverlay')!;
+        const betInput = document.getElementById('betInput') as HTMLInputElement;
+        const betConfirmBtn = document.getElementById('betConfirmBtn') as HTMLButtonElement;
+        const betSoldeEl = document.getElementById('betSolde')!;
+        const betErrorEl = document.getElementById('betError')!;
+
+        function formatXOF(n: number) {
+            return n.toLocaleString('fr-FR') + ' XOF';
+        }
+
+        function updateBetSoldeDisplay() {
+            betSoldeEl.textContent = `Solde : ${formatXOF(balance)}`;
+        }
+
+        function openBetPopup() {
+            betPopupOpen = true;
+            betErrorEl.textContent = '';
+            updateBetSoldeDisplay();
+
+            if (balance < MIN_BET) {
+                betErrorEl.textContent = `Solde insuffisant pour miser (min ${formatXOF(MIN_BET)}).`;
+                betInput.disabled = true;
+                betConfirmBtn.disabled = true;
+            } else {
+                betInput.disabled = false;
+                betConfirmBtn.disabled = false;
+                betInput.value = '';
+                betInput.max = String(Math.min(MAX_BET, balance));
+            }
+
+            betOverlay.classList.add('visible');
+            setTimeout(() => betInput.focus(), 50);
+        }
+
+        function closeBetPopup() {
+            betPopupOpen = false;
+            betOverlay.classList.remove('visible');
+        }
+
+        function tryConfirmBet(amount: string) {
+            const bet = parseInt(amount, 10);
+
+            if (isNaN(bet)) {
+                betErrorEl.textContent = 'Veuillez entrer un montant.';
+                return;
+            }
+            if (bet < MIN_BET || bet > MAX_BET) {
+                betErrorEl.textContent = `La mise doit être entre ${formatXOF(MIN_BET)} et ${formatXOF(MAX_BET)}.`;
+                return;
+            }
+            if (bet > balance) {
+                betErrorEl.textContent = 'Solde insuffisant pour cette mise.';
+                return;
+            }
+
+            balance -= bet;
+            currentBet = bet;
+            updateBetSoldeDisplay();
+            closeBetPopup();
+
+            generateObjectif();
+            openObjectifPopup();
+        }
+
+        const handleBetConfirmClick = () => tryConfirmBet(betInput.value);
+        betConfirmBtn.addEventListener('click', handleBetConfirmClick);
+        cleanupFns.push(() => betConfirmBtn.removeEventListener('click', handleBetConfirmClick));
+
+        const handleBetInputKeydown = (e: KeyboardEvent) => {
+            e.stopPropagation();
+            if (e.key === 'Enter') {
+                tryConfirmBet(betInput.value);
+            }
+        };
+        betInput.addEventListener('keydown', handleBetInputKeydown);
+        cleanupFns.push(() => betInput.removeEventListener('keydown', handleBetInputKeydown));
+
+        // ============================================================
+        // 4ter. SYSTÈME D'OBJECTIFS
+        // ============================================================
+
+        let objectifPopupOpen = false;
+        let currentObjectif: any = null;
+        let objectifStartTime = 0;
+        let gameOverReason: string | null = null; // 'collision' | 'timeout' | null
+
+        const objectifOverlay = document.getElementById('objectifOverlay')!;
+        const objectifInputEl = document.getElementById('objectifInput')!;
+        const objectifConfirmBtn = document.getElementById('objectifConfirmBtn') as HTMLButtonElement;
+
+        function randInt(min: number, max: number) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function generateObjectif() {
+            const types = ['SCORE', 'TIME', 'KILLS', 'KILLS_IN_TIME', 'SCORE_IN_TIME'];
+            const type = types[randInt(0, types.length - 1)];
+
+            let obj: any = { type };
+
+            if (type === 'SCORE') {
+                obj.scoreTarget = randInt(5, 25) * 10;
+                obj.description = `Atteins ${obj.scoreTarget} points`;
+            } else if (type === 'TIME') {
+                obj.timeTarget = randInt(20, 60);
+                obj.description = `Joue pendant ${obj.timeTarget} secondes`;
+            } else if (type === 'KILLS') {
+                obj.killsTarget = randInt(5, 25);
+                obj.description = `Élimine ${obj.killsTarget} aliens`;
+            } else if (type === 'KILLS_IN_TIME') {
+                obj.killsTarget = randInt(5, 15);
+                obj.timeLimit = randInt(20, 45);
+                obj.description = `Élimine ${obj.killsTarget} aliens en ${obj.timeLimit} secondes`;
+            } else if (type === 'SCORE_IN_TIME') {
+                obj.scoreTarget = randInt(5, 15) * 10;
+                obj.timeLimit = randInt(20, 45);
+                obj.description = `Atteins ${obj.scoreTarget} points en ${obj.timeLimit} secondes`;
+            }
+
+            currentObjectif = obj;
+            return obj;
+        }
+
+        function openObjectifPopup() {
+            objectifPopupOpen = true;
+            objectifInputEl.textContent = currentObjectif.description;
+            objectifOverlay.classList.add('visible');
+        }
+
+        function closeObjectifPopup() {
+            objectifPopupOpen = false;
+            objectifOverlay.classList.remove('visible');
+        }
+
+        function startPlayingWithObjectif() {
+            closeObjectifPopup();
+            gameOverReason = null;
+            gameState = 'PLAYING';
+            resetGame();
+            objectifStartTime = Date.now();
+        }
+
+        objectifConfirmBtn.addEventListener('click', startPlayingWithObjectif);
+        cleanupFns.push(() => objectifConfirmBtn.removeEventListener('click', startPlayingWithObjectif));
+
+        function checkObjectifProgress() {
+            if (!currentObjectif || gameState !== 'PLAYING') return;
+
+            const elapsed = (Date.now() - objectifStartTime) / 1000;
+            let achieved = false;
+
+            switch (currentObjectif.type) {
+                case 'SCORE':
+                    achieved = score >= currentObjectif.scoreTarget;
+                    break;
+                case 'TIME':
+                    achieved = elapsed >= currentObjectif.timeTarget;
+                    break;
+                case 'KILLS':
+                    achieved = difficultyManager.monstresTues >= currentObjectif.killsTarget;
+                    break;
+                case 'KILLS_IN_TIME':
+                    achieved = difficultyManager.monstresTues >= currentObjectif.killsTarget;
+                    break;
+                case 'SCORE_IN_TIME':
+                    achieved = score >= currentObjectif.scoreTarget;
+                    break;
+            }
+
+            if (achieved) {
+                gameState = 'WON';
+                balance += currentBet * 2;
+                updateBetSoldeDisplay();
+                showResultPopup(true);
+                return;
+            }
+
+            if ((currentObjectif.type === 'KILLS_IN_TIME' || currentObjectif.type === 'SCORE_IN_TIME') &&
+                elapsed >= currentObjectif.timeLimit) {
+                gameOverReason = 'timeout';
+                gameState = 'GAMEOVER';
+                showResultPopup(false);
+            }
+        }
+
+        // ============================================================
+        // 4quater. POPUP DE RÉSULTAT (GAME OVER / GAME WIN)
+        // ============================================================
+
+        let resultPopupOpen = false;
+
+        const resultOverlay = document.getElementById('resultOverlay')!;
+        const resultBadgeEl = document.getElementById('resultBadge')!;
+        const resultInputEl = document.getElementById('resultInput')!;
+        const resultConfirmBtn = document.getElementById('resultConfirmBtn') as HTMLButtonElement;
+
+        function showResultPopup(isWin: boolean) {
+            resultPopupOpen = true;
+            resultBadgeEl.classList.remove('over', 'win');
+            resultBadgeEl.classList.add(isWin ? 'win' : 'over');
+
+            const objDesc = currentObjectif ? currentObjectif.description : '';
+            let reasonLine = '';
+            if (!isWin) {
+                reasonLine = gameOverReason === 'timeout'
+                    ? "Temps écoulé avant d'atteindre l'objectif"
+                    : 'Touché par un alien';
+            }
+
+            resultInputEl.innerHTML = `
+                <div>${objDesc}</div>
+                ${reasonLine ? `<div>${reasonLine}</div>` : ''}
+                <div>Score : ${score} — Tués : ${difficultyManager.monstresTues}</div>
+                <div class="gainLine" style="color:${isWin ? '#7fffb0' : '#ff8080'};">
+                    ${isWin ? `Gains : +${formatXOF(currentBet * 2)}` : `Mise perdue : -${formatXOF(currentBet)}`}
+                </div>
+                <div>Solde : ${formatXOF(balance)}</div>
+            `;
+
+            resultOverlay.classList.add('visible');
+        }
+
+        function closeResultPopup() {
+            resultPopupOpen = false;
+            resultOverlay.classList.remove('visible');
+        }
+
+        const handleResultConfirmClick = () => {
+            closeResultPopup();
+            openBetPopup();
+        };
+        resultConfirmBtn.addEventListener('click', handleResultConfirmClick);
+        cleanupFns.push(() => resultConfirmBtn.removeEventListener('click', handleResultConfirmClick));
+
+        // ============================================================
+        // 5. CONTROLES
+        // ============================================================
+
+        // Clavier (toujours actif)
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Spacebar') {
+                e.preventDefault();
+            }
+
+            if (betPopupOpen || objectifPopupOpen || resultPopupOpen) {
+                if (e.key === ' ' || e.key === 'Spacebar' || e.key === 'Enter') {
+                    if (resultPopupOpen) resultConfirmBtn.click();
+                }
+                return;
+            }
+
+            if (e.key === 'ArrowLeft') { joueurVelocityX = -joueurSpeed; }
+            if (e.key === 'ArrowRight') { joueurVelocityX = joueurSpeed; }
+            if (e.key === ' ' || e.key === 'Spacebar') {
+                if (gameState === 'START') {
+                    openBetPopup();
+                } else if (gameState === 'PLAYING') {
+                    fireTir();
+                }
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        cleanupFns.push(() => window.removeEventListener('keydown', handleKeyDown));
+
+        const handleKeyUp = (e: KeyboardEvent) => {
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                joueurVelocityX = 0;
+            }
+        };
+        window.addEventListener('keyup', handleKeyUp);
+        cleanupFns.push(() => window.removeEventListener('keyup', handleKeyUp));
+
+        // Touches tactiles (uniquement sur mobile)
+        const btnLeft = document.getElementById('btnLeft');
+        const btnRight = document.getElementById('btnRight');
+        const btnFire = document.getElementById('btnFire');
+
+        function setupTouchButton(element: HTMLElement | null, onStart: () => void, onEnd: () => void) {
+            if (!element) return;
+
+            const onTouchStart = (e: TouchEvent) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onStart();
+            };
+            const onTouchEnd = (e: TouchEvent) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onEnd();
+            };
+            const onTouchCancel = (e: TouchEvent) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onEnd();
+            };
+            const onMouseDown = (e: MouseEvent) => {
+                e.preventDefault();
+                onStart();
+            };
+            const onMouseUp = (e: MouseEvent) => {
+                e.preventDefault();
+                onEnd();
+            };
+            const onMouseLeave = () => {
+                onEnd();
+            };
+
+            element.addEventListener('touchstart', onTouchStart, { passive: false });
+            element.addEventListener('touchend', onTouchEnd, { passive: false });
+            element.addEventListener('touchcancel', onTouchCancel, { passive: false });
+            element.addEventListener('mousedown', onMouseDown);
+            element.addEventListener('mouseup', onMouseUp);
+            element.addEventListener('mouseleave', onMouseLeave);
+
+            cleanupFns.push(() => {
+                element.removeEventListener('touchstart', onTouchStart);
+                element.removeEventListener('touchend', onTouchEnd);
+                element.removeEventListener('touchcancel', onTouchCancel);
+                element.removeEventListener('mousedown', onMouseDown);
+                element.removeEventListener('mouseup', onMouseUp);
+                element.removeEventListener('mouseleave', onMouseLeave);
+            });
+        }
+
+        setupTouchButton(btnLeft,
+            () => {
+                touchLeft = true;
+                joueurVelocityX = -joueurSpeed;
+            },
+            () => {
+                touchLeft = false;
+                if (!touchRight) joueurVelocityX = 0;
+            }
+        );
+
+        setupTouchButton(btnRight,
+            () => {
+                touchRight = true;
+                joueurVelocityX = joueurSpeed;
+            },
+            () => {
+                touchRight = false;
+                if (!touchLeft) joueurVelocityX = 0;
+            }
+        );
+
+        setupTouchButton(btnFire,
+            () => {
+                if (betPopupOpen || objectifPopupOpen || resultPopupOpen) return;
+                if (gameState === 'START') {
+                    openBetPopup();
+                } else if (gameState === 'PLAYING') {
+                    fireTir();
+                }
+            },
+            () => {}
+        );
+
+        function fireTir() {
+            let now = Date.now();
+            if (now - lastTirTime >= tirDelay) {
+                tirs.push(new Tir(joueurX, joueurY));
+                lastTirTime = now;
+                difficultyManager.update(0, 0, false, true);
+            }
+        }
+
+        // Empêcher le défilement sur mobile
+        const handleTouchMove = (e: TouchEvent) => { e.preventDefault(); };
+        document.addEventListener('touchmove', handleTouchMove, { passive: false });
+        cleanupFns.push(() => document.removeEventListener('touchmove', handleTouchMove));
+
+        // ============================================================
+        // 6. FONCTIONS DU JEU
+        // ============================================================
+
+        function resetGame() {
+            difficultyManager = new DifficultyManager();
+            const scaledWidth = scaleSize((window as any).NEW_JOUEUR_WIDTH);
+            joueurX = (CANVAS_WIDTH - scaledWidth) / 2;
+            joueurY = CANVAS_HEIGHT - scaledWidth - 10;
+            monstres = [];
+            tirs = [];
+            explosions = [];
+            score = 0;
+            lastSpawnTime = Date.now();
+            lastTirTime = Date.now();
+            joueurSpeed = 5 * SCALE;
+        }
+
+        function initGame() {
+            resetGame();
+            animationFrameId = requestAnimationFrame(gameLoop);
+            openBetPopup();
+        }
+
+        function checkCollision(r1: any, r2: any) {
+            return r1.x < r2.x + r2.width &&
+                r1.x + r1.width > r2.x &&
+                r1.y < r2.y + r2.height &&
+                r1.y + r1.height > r2.y;
+        }
+
+        // ============================================================
+        // 7. BOUCLE PRINCIPALE
+        // ============================================================
+
+        let lastTime = performance.now();
+
+        function gameLoop(timestamp: number) {
+            let dt = (timestamp - lastTime) / 1000.0;
+            lastTime = timestamp;
+
+            ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+            if (timestamp - lastFrameTime >= frameDuration) {
+                currentFrameFond = (currentFrameFond + 1) % TOTAL_FRAMES_FOND;
+                if (assets.joueurFrames.length > 0) {
+                    currentFrameJoueur = (currentFrameJoueur + 1) % assets.joueurFrames.length;
+                }
+                lastFrameTime = timestamp;
+            }
+
+            if (framesFond[currentFrameFond]) {
+                ctx.drawImage(framesFond[currentFrameFond], 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            } else {
+                ctx.fillStyle = 'black';
+                ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            }
+
+            if (gameState === 'START') {
+                // Le popup de mise s'affiche automatiquement au chargement.
+                // On garde juste le décor animé en fond.
+
+            } else if (gameState === 'PLAYING') {
+                let now = Date.now();
+
+                joueurX += joueurVelocityX;
+                const scaledWidth = scaleSize((window as any).NEW_JOUEUR_WIDTH);
+                joueurX = Math.max(0, Math.min(joueurX, CANVAS_WIDTH - scaledWidth));
+
+                difficultyManager.update(dt);
+
+                let spawnDelay = difficultyManager.getSpawnDelay(baseSpawnDelay);
+                let maxMonsters = difficultyManager.getMaxMonsters(baseMaxMonsters);
+
+                if (now - lastSpawnTime >= spawnDelay && monstres.length < maxMonsters) {
+                    const scaledMonsterWidth = scaleSize((window as any).MONSTRE_WIDTH);
+                    let spawnX = Math.random() * (CANVAS_WIDTH - scaledMonsterWidth - 20) + 10;
+                    monstres.push(new Monstre(spawnX, -scaleSize((window as any).MONSTRE_HEIGHT), difficultyManager.difficultyScore));
+                    lastSpawnTime = now;
+                }
+
+                for (let i = tirs.length - 1; i >= 0; i--) {
+                    tirs[i].update();
+                    if (tirs[i].y < 0) tirs.splice(i, 1);
+                }
+
+                let playerRect = {
+                    x: joueurX,
+                    y: joueurY,
+                    width: scaleSize((window as any).NEW_JOUEUR_WIDTH),
+                    height: scaleSize((window as any).NEW_JOUEUR_HEIGHT)
+                };
+
+                for (let i = monstres.length - 1; i >= 0; i--) {
+                    let m = monstres[i];
+                    m.update(now, frameDuration, joueurX);
+
+                    if (m.isOffScreen()) {
+                        monstres.splice(i, 1);
+                        continue;
+                    }
+
+                    if (checkCollision(m.getRect(), playerRect)) {
+                        gameOverReason = 'collision';
+                        gameState = 'GAMEOVER';
+                        showResultPopup(false);
+                        break;
+                    }
+                }
+
+                for (let t = tirs.length - 1; t >= 0; t--) {
+                    let tirHit = false;
+                    for (let m = monstres.length - 1; m >= 0; m--) {
+                        if (checkCollision(tirs[t].getRect(), monstres[m].getRect())) {
+                            explosions.push(new Explosion(
+                                monstres[m].x + monstres[m].width / 2,
+                                monstres[m].y + monstres[m].height / 2
+                            ));
+                            monstres.splice(m, 1);
+                            tirs.splice(t, 1);
+                            score += 10;
+                            difficultyManager.update(dt, 1, true, false);
+                            tirHit = true;
+                            break;
+                        }
+                    }
+                    if (tirHit) continue;
+                }
+
+                for (let i = explosions.length - 1; i >= 0; i--) {
+                    explosions[i].update(now);
+                    if (explosions[i].finished) explosions.splice(i, 1);
+                }
+
+                checkObjectifProgress();
+
+                tirs.forEach(t => t.draw(ctx));
+                monstres.forEach(m => m.draw(ctx));
+                explosions.forEach(e => e.draw(ctx));
+
+                if (assets.joueurFrames.length > 0 && assets.joueurFrames[currentFrameJoueur]) {
+                    const w = scaleSize((window as any).NEW_JOUEUR_WIDTH);
+                    const h = scaleSize((window as any).NEW_JOUEUR_HEIGHT);
+                    ctx.drawImage(assets.joueurFrames[currentFrameJoueur], joueurX, joueurY, w, h);
+                }
+
+                const fontSize = Math.floor(14 * SCALE);
+                ctx.font = `${fontSize}px Arial`;
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'top';
+                ctx.fillStyle = 'white';
+                ctx.fillText(`Score: ${score}`, 10, 10);
+
+            } else if (gameState === 'GAMEOVER' || gameState === 'WON') {
+                // Le résultat détaillé est affiché dans la popup #resultOverlay.
+                // On garde juste le décor du jeu figé en fond, légèrement assombri.
+                ctx.fillStyle = 'rgba(0,0,0,0.35)';
+                ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            }
+
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        // ============================================================
+        // 8. DÉMARRAGE
+        // ============================================================
+
+        if (assetsLoaded === totalAssetsToLoad && backgroundLoaded) {
+            hideLoading();
+            initGame();
+        }
+
+        // ============================================================
+        // NETTOYAGE (démontage du composant)
+        // ============================================================
+        return () => {
+            if (animationFrameId !== null) {
+                cancelAnimationFrame(animationFrameId);
+            }
+            cleanupFns.forEach(fn => fn());
+        };
+    }, []);
+
     return (
-      <div className="fixed inset-0 z-[9999] bg-[#0a0a1a]">
-        {/* Bouton pour fermer l'iframe */}
-        <button
-          onClick={closeGameIframe}
-          className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-red-500/20 border border-red-500/30 flex items-center justify-center text-red-400 hover:bg-red-500 hover:text-white transition-all"
-        >
-          <CloseIcon />
-        </button>
-
-        {/* Iframe du jeu */}
-        <iframe
-          src={gameIframeUrl}
-          className="w-full h-full border-none"
-          title={gameName}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals allow-orientation-lock allow-pointer-lock allow-presentation"
-        />
-      </div>
-    )
-  }
-
-  // =====================================================
-  // RENDU PRINCIPAL
-  // =====================================================
-  return (
-    <div className="relative min-h-screen text-white overflow-x-hidden" style={{ background: '#0a0a1a' }}>
-      
-      {/* Canvas Background */}
-      <canvas
-        ref={canvasRef}
-        className="fixed inset-0 w-full h-full z-0 pointer-events-none"
-        style={{ opacity: 0.4 }}
-      />
-
-      {/* Orbs lumineux */}
-      <div
-        className="fixed w-[400px] sm:w-[500px] h-[400px] sm:h-[500px] rounded-full pointer-events-none z-0 -top-[15%] -right-[10%] animate-[float1_12s_ease-in-out_infinite]"
-        style={{
-          background: 'radial-gradient(circle, rgba(0,200,150,0.06) 0%, transparent 70%)',
-          filter: 'blur(80px)'
-        }}
-      />
-      <div
-        className="fixed w-[350px] sm:w-[450px] h-[350px] sm:h-[450px] rounded-full pointer-events-none z-0 -bottom-[10%] -left-[5%] animate-[float2_15s_ease-in-out_infinite]"
-        style={{
-          background: 'radial-gradient(circle, rgba(108,92,231,0.05) 0%, transparent 70%)',
-          filter: 'blur(80px)'
-        }}
-      />
-
-      {/* Main Content */}
-      <div className="relative z-10 w-full max-w-md mx-auto px-4 sm:px-6 py-8 pb-32 flex flex-col items-center justify-center min-h-screen">
-        
-        {/* Stats Header - Vies et Solde */}
-        <motion.div
-          className="flex items-center justify-center gap-4 sm:gap-5 mb-8"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          {/* Vies */}
-          <div className="flex items-center gap-1.5 bg-white/[0.03] border border-white/[0.06] rounded-full px-4 py-2">
-            <div className="flex gap-1">
-              {Array.from({ length: 3 }, (_, i) => (
-                <HeartIcon
-                  key={i}
-                  filled={i < vies}
-                  className={`w-4 h-4 ${i < vies ? '' : 'opacity-30'}`}
-                />
-              ))}
-            </div>
-            <span className="text-white/50 text-xs font-medium ml-1">{vies}/3</span>
-          </div>
-
-          {/* Solde */}
-          <div className="flex items-center gap-2 bg-emerald-400/5 border border-emerald-400/20 rounded-full px-4 py-2">
-            <span className="text-emerald-400">
-              <CoinIcon />
-            </span>
-            <span className="text-emerald-400 text-xs font-bold">{formatXOF(solde)}</span>
-          </div>
-        </motion.div>
-
-        {/* Titre du jeu */}
-        <motion.h1
-          className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white text-center mb-2 leading-tight"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-        >
-          {dataLoaded ? gameName : (
-            <span className="inline-block w-48 h-8 bg-white/[0.04] rounded-lg animate-pulse" />
-          )}
-        </motion.h1>
-
-        {/* Joueur */}
-        <motion.div
-          className="flex items-center gap-2 mb-6 text-white/40 text-sm"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.15 }}
-        >
-          <UserIcon />
-          <span>Joueur : <span className="text-white/60 font-medium">{userName}</span></span>
-        </motion.div>
-
-        {/* Game Card */}
-        <motion.div
-          className="relative w-full"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
-          {/* Glow */}
-          <div className="absolute -inset-4 bg-emerald-400/5 rounded-3xl blur-2xl" />
-
-          <div
-            className="relative rounded-2xl overflow-hidden border border-emerald-400/10 shadow-[0_0_40px_rgba(0,200,150,0.08)]"
-            style={{
-              background: 'linear-gradient(160deg, rgba(26,26,46,0.85), rgba(22,33,62,0.75))'
-            }}
-          >
-            {/* Game Image Preview */}
-            <div className="relative h-48 sm:h-60 bg-gradient-to-br from-[#0d1117] to-[#13131A] flex items-center justify-center overflow-hidden">
-              {dataLoaded && gameImageUrl && !imageError ? (
-                <img
-                  src={gameImageUrl}
-                  alt={gameName}
-                  className="w-full h-full object-cover"
-                  onError={() => setImageError(true)}
-                />
-              ) : !dataLoaded ? (
-                <div className="w-full h-full bg-white/[0.02] animate-pulse flex items-center justify-center">
-                  <div className="w-12 h-12 rounded-full border-2 border-emerald-400/20 border-t-emerald-400 animate-spin" />
-                </div>
-              ) : (
-                <div className="flex flex-col items-center gap-3 text-white/30">
-                  <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                    <circle cx="8.5" cy="8.5" r="1.5" />
-                    <polyline points="21 15 16 10 5 21" />
-                  </svg>
-                  <span className="text-sm">{gameName}</span>
-                </div>
-              )}
+        <>
+            {/* Écran de chargement */}
+            <div id="loading">
+                <div className="spinner"></div>
+                <span className="loading-text">Chargement du jeu...</span>
             </div>
 
-            {/* Card Bottom */}
-            <div className="p-4 sm:p-6">
-              <div className="grid grid-cols-2 gap-4 mb-5">
-                <div>
-                  <p className="text-white/40 text-[10px] tracking-wide uppercase mb-1">Mise min.</p>
-                  <p className="text-emerald-400 text-sm font-bold">100 XOF</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-white/40 text-[10px] tracking-wide uppercase mb-1">Multiplicateur</p>
-                  <div className="flex items-center gap-1 justify-end">
-                    <LightningIcon />
-                    <p className="text-white text-sm font-bold">x{MULTIPLICATEUR}</p>
-                  </div>
-                </div>
-              </div>
+            <div id="gameContainer">
+                <canvas id="gameCanvas"></canvas>
 
-              {/* Play Button */}
-              <button
-                onClick={openPopup}
-                disabled={vies === 0 || solde < 100}
-                className="relative w-full overflow-hidden rounded-xl py-4 font-bold text-sm tracking-widest uppercase text-[#0a0a1a] transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed bg-gradient-to-r from-emerald-400 to-emerald-600 shadow-xl shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:-translate-y-0.5 active:scale-[0.98]"
-              >
-                <span className="relative flex items-center justify-center gap-2">
-                  <PlayIcon />
-                  {vies === 0 ? "Plus de vies" : solde < 100 ? "Solde insuffisant" : "Jouer maintenant"}
-                </span>
-              </button>
-
-              <div className="flex items-center justify-center gap-1.5 mt-3">
-                <span className="text-emerald-400/50">
-                  <ShieldIcon />
-                </span>
-                <span className="text-white/25 text-[10px]">Partie securisee · Token unique</span>
-              </div>
+                {/* Contrôles tactiles - disposés comme demandé */}
+                <div id="touchControls">
+                    <button id="btnLeft">◀</button>
+                    <button id="btnFire">🔥</button>
+                    <button id="btnRight">▶</button>
+                </div>
             </div>
-          </div>
-        </motion.div>
-      </div>
 
-      {/* Popup de mise */}
-      <AnimatePresence>
-        {showPopup && (
-          <motion.div
-            className="fixed inset-0 bg-[#0a0a1a]/85 backdrop-blur-xl z-[1000] flex items-center justify-center p-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={closePopup}
-          >
-            <motion.div
-              className="relative w-full max-w-sm rounded-3xl border border-emerald-400/20 shadow-[0_30px_80px_rgba(0,0,0,0.5)] overflow-hidden"
-              style={{
-                background: 'linear-gradient(160deg, #1a1a2e, #16213e, #1a1a2e)'
-              }}
-              initial={{ scale: 0.85, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.85, opacity: 0, y: 20 }}
-              transition={{ type: 'spring', damping: 20, stiffness: 200 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-1 rounded-b bg-gradient-to-r from-emerald-400 to-purple-400" />
-
-              {success ? (
-                /* Vue succès - Redirection vers l'iframe */
-                <div className="p-8 flex flex-col items-center text-center">
-                  <motion.div
-                    className="mb-4"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: 'spring', stiffness: 200 }}
-                  >
-                    <div className="w-20 h-20 rounded-full bg-emerald-400/10 border-2 border-emerald-400 flex items-center justify-center">
-                      <span className="text-emerald-400">
-                        <CheckCircleIcon />
-                      </span>
-                    </div>
-                  </motion.div>
-                  <h3 className="text-lg font-bold text-white mb-1">Mise confirmee !</h3>
-                  <p className="text-white/40 text-sm mb-2">
-                    <span className="text-emerald-400 font-bold">{formatXOF(mise)}</span> mises
-                  </p>
-                  <p className="text-white/30 text-xs mb-6">Lancement du jeu en cours...</p>
-                  <div className="w-full bg-white/[0.04] rounded-full h-1.5 overflow-hidden">
-                    <motion.div
-                      className="h-full bg-gradient-to-r from-emerald-400 to-purple-400 rounded-full"
-                      initial={{ width: '0%' }}
-                      animate={{ width: '100%' }}
-                      transition={{ duration: 2, ease: 'linear' }}
-                    />
-                  </div>
+            {/* Popup de mise */}
+            <div id="betOverlay">
+                <div id="betSolde">Solde : 10 000 XOF</div>
+                <div id="betCard">
+                    <input id="betInput" type="number" inputMode="numeric" placeholder="100 - 500" min={100} max={500} step={1} />
+                    <button id="betConfirmBtn" aria-label="Valider la mise"></button>
                 </div>
-              ) : (
-                <>
-                  {/* Popup Header */}
-                  <div className="flex items-center justify-between p-5 border-b border-white/[0.04]">
-                    <div className="flex items-center gap-2">
-                      <LightningIcon />
-                      <span className="text-white text-sm font-bold tracking-wide">Placer une mise</span>
-                    </div>
-                    <button
-                      onClick={closePopup}
-                      className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-white/40 hover:text-white hover:border-white/20 transition-all"
-                    >
-                      <CloseIcon />
-                    </button>
-                  </div>
+                <div id="betHint">Mise min : 100 XOF — Mise max : 500 XOF</div>
+                <div id="betError"></div>
+            </div>
 
-                  <div className="p-5 space-y-5">
-                    {/* Solde & Vies */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-white/[0.03] rounded-xl p-3 border border-white/[0.06]">
-                        <p className="text-white/40 text-[10px] tracking-wide uppercase mb-2">Solde</p>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-emerald-400">
-                            <CoinIcon />
-                          </span>
-                          <span className="text-emerald-400 text-sm font-bold truncate">{formatXOF(solde)}</span>
-                        </div>
-                      </div>
-                      <div className="bg-white/[0.03] rounded-xl p-3 border border-white/[0.06]">
-                        <p className="text-white/40 text-[10px] tracking-wide uppercase mb-2">Vies</p>
-                        <div className="flex items-center gap-1">
-                          {Array.from({ length: 3 }, (_, i) => (
-                            <HeartIcon key={i} filled={i < vies} className="w-5 h-5" />
-                          ))}
-                        </div>
-                      </div>
-                    </div>
+            {/* Popup d'objectif */}
+            <div id="objectifOverlay">
+                <div id="objectifCard">
+                    <div id="objectifInput"></div>
+                    <button id="objectifConfirmBtn" aria-label="Valider l'objectif"></button>
+                </div>
+            </div>
 
-                    {/* Montant */}
-                    <div>
-                      <div className="flex items-center justify-between mb-3">
-                        <label className="text-white/40 text-[10px] tracking-wide uppercase">Montant mise</label>
-                        <span className="text-emerald-400 text-xs font-bold">{formatXOF(mise)}</span>
-                      </div>
+            {/* Popup de résultat (Game Over / Game Win) */}
+            <div id="resultOverlay">
+                <div id="resultCard">
+                    <div id="resultBadge"></div>
+                    <div id="resultInput"></div>
+                    <button id="resultConfirmBtn" aria-label="Continuer"></button>
+                </div>
+            </div>
 
-                      <div className="flex items-center gap-3 mb-3">
-                        <button
-                          onClick={() => handleMiseChange(mise - 100)}
-                          className="w-9 h-9 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-white/60 hover:text-white hover:border-emerald-400/30 transition-all active:scale-95"
-                        >
-                          <MinusIcon />
-                        </button>
-                        <div className={`flex-1 bg-white/[0.04] border rounded-xl px-4 py-2.5 transition-all ${inputFocused ? 'border-emerald-400/50' : 'border-white/[0.06]'}`}>
-                          <input
-                            type="number"
-                            value={mise}
-                            onChange={(e) => handleMiseChange(Number(e.target.value))}
-                            onFocus={() => setInputFocused(true)}
-                            onBlur={() => setInputFocused(false)}
-                            className="w-full bg-transparent text-white text-center text-sm font-bold outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                          />
-                        </div>
-                        <button
-                          onClick={() => handleMiseChange(mise + 100)}
-                          className="w-9 h-9 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-white/60 hover:text-white hover:border-emerald-400/30 transition-all active:scale-95"
-                        >
-                          <PlusIcon />
-                        </button>
-                      </div>
+            <style>{`
+                * {
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                }
 
-                      <input
-                        type="range"
-                        min={100}
-                        max={solde}
-                        step={100}
-                        value={mise}
-                        onChange={(e) => handleMiseChange(Number(e.target.value))}
-                        className="w-full h-1.5 rounded-full appearance-none bg-white/[0.08] cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-emerald-400"
-                      />
-                      <div className="flex justify-between mt-1">
-                        <span className="text-white/20 text-[10px]">100</span>
-                        <span className="text-white/20 text-[10px]">{formatXOF(solde)}</span>
-                      </div>
-                    </div>
+                body {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    height: 100vh;
+                    width: 100vw;
+                    overflow: hidden;
+                    font-family: Arial, sans-serif;
+                    touch-action: none;
+                    user-select: none;
+                    -webkit-user-select: none;
+                    background-color: #0a0a0a;
+                    background-size: cover;
+                    background-position: center;
+                    background-repeat: no-repeat;
+                    transition: background-image 0.8s ease;
+                }
 
-                    {/* Mises rapides */}
-                    <div>
-                      <p className="text-white/40 text-[10px] tracking-wide uppercase mb-2">Mises rapides</p>
-                      <div className="flex flex-wrap gap-2">
-                        {MISES_RAPIDES.filter((m) => m <= solde).map((m) => (
-                          <button
-                            key={m}
-                            onClick={() => setMise(m)}
-                            className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all active:scale-95 ${mise === m ? 'bg-emerald-400/10 border-emerald-400/50 text-emerald-400' : 'bg-white/[0.04] border-white/[0.06] text-white/40 hover:border-emerald-400/20 hover:text-white/70'}`}
-                          >
-                            {m >= 1000 ? `${m / 1000}k` : m}
-                          </button>
-                        ))}
-                        <button
-                          onClick={() => setMise(solde)}
-                          className="px-3 py-1.5 rounded-lg border border-red-400/30 bg-red-400/5 text-red-400 text-xs font-bold hover:bg-red-400/10 transition-all active:scale-95"
-                        >
-                          MAX
-                        </button>
-                      </div>
-                    </div>
+                #gameContainer {
+                    position: relative;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    width: 100vw;
+                    height: 100vh;
+                    background: rgba(0, 0, 0, 0.5);
+                    backdrop-filter: blur(4px);
+                    -webkit-backdrop-filter: blur(4px);
+                }
 
-                    {/* Gain potentiel */}
-                    <div className="bg-gradient-to-r from-emerald-400/5 to-transparent border border-emerald-400/15 rounded-xl p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-white/40 text-[10px] tracking-wide uppercase mb-1">Gain potentiel</p>
-                          <p className="text-emerald-400 text-xl font-bold">{formatXOF(gainPotentiel)}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-white/40 text-[10px] tracking-wide uppercase mb-1">Multiplicateur</p>
-                          <div className="flex items-center gap-1 justify-end">
-                            <LightningIcon />
-                            <p className="text-white text-xl font-bold">x{MULTIPLICATEUR}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                #gameCanvas {
+                    display: block;
+                    background: black;
+                    image-rendering: pixelated;
+                    image-rendering: crisp-edges;
+                    border-radius: 12px;
+                    box-shadow: 0 0 60px rgba(0, 150, 255, 0.15);
+                }
 
-                    {/* Bouton confirmer */}
-                    <button
-                      onClick={handleConfirm}
-                      disabled={confirmLoading || mise < 100 || mise > solde}
-                      className="relative w-full overflow-hidden rounded-xl py-4 text-sm tracking-widest uppercase text-[#0a0a1a] font-bold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] bg-gradient-to-r from-emerald-400 to-emerald-600 shadow-xl shadow-emerald-500/30"
-                    >
-                      <span className="relative flex items-center justify-center gap-2">
-                        {confirmLoading ? (
-                          <>
-                            <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="40" strokeDashoffset="10" />
-                            </svg>
-                            Validation...
-                          </>
-                        ) : (
-                          <>
-                            <PlayIcon />
-                            Confirmer {formatXOF(mise)}
-                          </>
-                        )}
-                      </span>
-                    </button>
+                /* ============================================================
+                   CONTROLES TACTILES - UNIQUEMENT SUR MOBILE
+                   ============================================================ */
+                #touchControls {
+                    position: absolute;
+                    bottom: 30px;
+                    left: 0;
+                    right: 0;
+                    display: none; /* Caché par défaut */
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 0 20px;
+                    pointer-events: none;
+                    z-index: 10;
+                    height: 100px;
+                }
 
-                    <p className="text-white/20 text-[10px] text-center">
-                      En jouant, vous acceptez les conditions d&apos;utilisation
-                    </p>
-                  </div>
-                </>
-              )}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  )
+                /* Affichage uniquement sur mobile */
+                @media (max-width: 768px) {
+                    #touchControls {
+                        display: flex !important;
+                    }
+                }
+
+                @media (pointer: coarse) {
+                    #touchControls {
+                        display: flex !important;
+                    }
+                }
+
+                /* Bouton Gauche - à gauche */
+                #btnLeft {
+                    pointer-events: auto;
+                    width: 75px;
+                    height: 75px;
+                    border-radius: 50%;
+                    border: 3px solid rgba(255, 255, 255, 0.3);
+                    background: rgba(255, 255, 255, 0.1);
+                    backdrop-filter: blur(5px);
+                    -webkit-backdrop-filter: blur(5px);
+                    color: white;
+                    font-size: 32px;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    touch-action: none;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+                }
+
+                #btnLeft:active {
+                    background: rgba(255, 255, 255, 0.3);
+                    transform: scale(0.9);
+                }
+
+                /* Bouton Tir - au centre */
+                #btnFire {
+                    pointer-events: auto;
+                    width: 85px;
+                    height: 85px;
+                    border-radius: 50%;
+                    border: 4px solid rgba(255, 50, 50, 0.6);
+                    background: rgba(255, 50, 50, 0.25);
+                    backdrop-filter: blur(5px);
+                    -webkit-backdrop-filter: blur(5px);
+                    color: white;
+                    font-size: 28px;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    touch-action: none;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    box-shadow: 0 4px 20px rgba(255, 50, 50, 0.3);
+                    margin: 0 auto;
+                }
+
+                #btnFire:active {
+                    background: rgba(255, 50, 50, 0.6);
+                    transform: scale(0.9);
+                    box-shadow: 0 0 30px rgba(255, 50, 50, 0.5);
+                }
+
+                /* Bouton Droite - à droite */
+                #btnRight {
+                    pointer-events: auto;
+                    width: 75px;
+                    height: 75px;
+                    border-radius: 50%;
+                    border: 3px solid rgba(255, 255, 255, 0.3);
+                    background: rgba(255, 255, 255, 0.1);
+                    backdrop-filter: blur(5px);
+                    -webkit-backdrop-filter: blur(5px);
+                    color: white;
+                    font-size: 32px;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    touch-action: none;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+                }
+
+                #btnRight:active {
+                    background: rgba(255, 255, 255, 0.3);
+                    transform: scale(0.9);
+                }
+
+                /* Adaptation pour très petits écrans */
+                @media (max-width: 400px) {
+                    #btnLeft, #btnRight {
+                        width: 60px;
+                        height: 60px;
+                        font-size: 26px;
+                    }
+                    #btnFire {
+                        width: 70px;
+                        height: 70px;
+                        font-size: 24px;
+                    }
+                    #touchControls {
+                        bottom: 20px;
+                        padding: 0 15px;
+                        height: 80px;
+                    }
+                }
+
+                @media (max-width: 350px) {
+                    #btnLeft, #btnRight {
+                        width: 50px;
+                        height: 50px;
+                        font-size: 20px;
+                    }
+                    #btnFire {
+                        width: 60px;
+                        height: 60px;
+                        font-size: 20px;
+                    }
+                    #touchControls {
+                        bottom: 15px;
+                        padding: 0 10px;
+                        height: 70px;
+                    }
+                }
+
+                /* Animation de chargement */
+                #loading {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    background: rgba(0, 0, 0, 0.85);
+                    z-index: 9999;
+                    color: white;
+                    font-size: 24px;
+                    flex-direction: column;
+                    gap: 20px;
+                    transition: opacity 0.5s ease;
+                }
+
+                #loading.hidden {
+                    opacity: 0;
+                    pointer-events: none;
+                }
+
+                #loading .spinner {
+                    width: 50px;
+                    height: 50px;
+                    border: 4px solid rgba(255, 255, 255, 0.1);
+                    border-top-color: #00aaff;
+                    border-radius: 50%;
+                    animation: spin 1s linear infinite;
+                }
+
+                #loading .loading-text {
+                    font-size: 18px;
+                    color: #aaa;
+                }
+
+                @keyframes spin {
+                    to { transform: rotate(360deg); }
+                }
+
+                /* ============================================================
+                   POPUP DE MISE
+                   ============================================================ */
+                #betOverlay {
+                    position: fixed;
+                    top: 0; left: 0; right: 0; bottom: 0;
+                    display: none;
+                    justify-content: center;
+                    align-items: center;
+                    flex-direction: column;
+                    gap: 14px;
+                    background: rgba(0, 0, 0, 0.75);
+                    backdrop-filter: blur(6px);
+                    -webkit-backdrop-filter: blur(6px);
+                    z-index: 5000;
+                    padding: 16px;
+                }
+
+                #betOverlay.visible {
+                    display: flex;
+                }
+
+                #betSolde {
+                    color: #ffe066;
+                    font-weight: bold;
+                    font-size: clamp(15px, 4vw, 20px);
+                    text-shadow: 0 0 8px rgba(0,0,0,0.8);
+                    letter-spacing: 0.5px;
+                }
+
+                #betCard {
+                    position: relative;
+                    width: min(92vw, 460px);
+                    aspect-ratio: 1536 / 1024;
+                    background-image: url('/galaxy/bet.webp');
+                    background-size: contain;
+                    background-repeat: no-repeat;
+                    background-position: center;
+                }
+
+                #betInput {
+                    position: absolute;
+                    left: 22.47%;
+                    top: 43.26%;
+                    width: 54.66%;
+                    height: 20.74%;
+                    background: transparent;
+                    border: none;
+                    outline: none;
+                    color: #ffffff;
+                    text-align: center;
+                    font-family: Arial, sans-serif;
+                    font-weight: bold;
+                    font-size: clamp(16px, 4.2vw, 26px);
+                    text-shadow: 0 0 6px rgba(255,255,255,0.35);
+                    -moz-appearance: textfield;
+                }
+
+                #betInput::-webkit-outer-spin-button,
+                #betInput::-webkit-inner-spin-button {
+                    -webkit-appearance: none;
+                    margin: 0;
+                }
+
+                #betInput::placeholder {
+                    color: rgba(255,255,255,0.45);
+                    font-weight: normal;
+                }
+
+                #betConfirmBtn {
+                    position: absolute;
+                    left: 29.81%;
+                    top: 67.89%;
+                    width: 40.72%;
+                    height: 21.23%;
+                    background: transparent;
+                    border: none;
+                    cursor: pointer;
+                    padding: 0;
+                }
+
+                #betHint {
+                    color: #dcdcdc;
+                    font-size: clamp(11px, 3vw, 13px);
+                    text-align: center;
+                }
+
+                #betError {
+                    color: #ff5c5c;
+                    font-weight: bold;
+                    font-size: clamp(12px, 3.2vw, 14px);
+                    min-height: 18px;
+                    text-align: center;
+                    text-shadow: 0 0 6px rgba(0,0,0,0.8);
+                }
+
+                /* ============================================================
+                   POPUP D'OBJECTIF
+                   ============================================================ */
+                #objectifOverlay {
+                    position: fixed;
+                    top: 0; left: 0; right: 0; bottom: 0;
+                    display: none;
+                    justify-content: center;
+                    align-items: center;
+                    flex-direction: column;
+                    gap: 14px;
+                    background: rgba(0, 0, 0, 0.75);
+                    backdrop-filter: blur(6px);
+                    -webkit-backdrop-filter: blur(6px);
+                    z-index: 5100;
+                    padding: 16px;
+                }
+
+                #objectifOverlay.visible {
+                    display: flex;
+                }
+
+                #objectifCard {
+                    position: relative;
+                    width: min(92vw, 420px);
+                    aspect-ratio: 853 / 743;
+                    background-image: url('/galaxy/objectif.jpg');
+                    background-size: contain;
+                    background-repeat: no-repeat;
+                    background-position: center;
+                }
+
+                #objectifInput {
+                    position: absolute;
+                    left: 10.02%;
+                    top: 24.47%;
+                    width: 80.59%;
+                    height: 52.17%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    text-align: center;
+                    color: #ffffff;
+                    font-family: Arial, sans-serif;
+                    font-weight: bold;
+                    font-size: clamp(15px, 5vw, 22px);
+                    line-height: 1.3;
+                    text-shadow: 0 0 6px rgba(255,255,255,0.3);
+                    padding: 4%;
+                }
+
+                #objectifConfirmBtn {
+                    position: absolute;
+                    left: 22.30%;
+                    top: 78.75%;
+                    width: 56.46%;
+                    height: 19.77%;
+                    background: transparent;
+                    border: none;
+                    cursor: pointer;
+                    padding: 0;
+                }
+
+                /* ============================================================
+                   POPUP DE RÉSULTAT (GAME OVER / GAME WIN)
+                   ============================================================ */
+                #resultOverlay {
+                    position: fixed;
+                    top: 0; left: 0; right: 0; bottom: 0;
+                    display: none;
+                    justify-content: center;
+                    align-items: center;
+                    flex-direction: column;
+                    gap: 14px;
+                    background: rgba(0, 0, 0, 0.8);
+                    backdrop-filter: blur(6px);
+                    -webkit-backdrop-filter: blur(6px);
+                    z-index: 5200;
+                    padding: 16px;
+                }
+
+                #resultOverlay.visible {
+                    display: flex;
+                }
+
+                #resultCard {
+                    position: relative;
+                    width: min(92vw, 440px);
+                    aspect-ratio: 854 / 793;
+                    background-image: url('/galaxy/result_card.webp');
+                    background-size: contain;
+                    background-repeat: no-repeat;
+                    background-position: center;
+                }
+
+                #resultBadge {
+                    position: absolute;
+                    left: 14%;
+                    top: 21%;
+                    width: 72%;
+                    height: 15%;
+                    background-size: contain;
+                    background-repeat: no-repeat;
+                    background-position: center;
+                }
+
+                #resultBadge.over {
+                    background-image: url('/galaxy/badge_over.webp');
+                }
+
+                #resultBadge.win {
+                    background-image: url('/galaxy/badge_win.webp');
+                }
+
+                #resultInput {
+                    position: absolute;
+                    left: 6.88%;
+                    top: 39.86%;
+                    width: 85.98%;
+                    height: 24.55%;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    text-align: center;
+                    color: #ffffff;
+                    font-family: Arial, sans-serif;
+                    font-size: clamp(12px, 3.4vw, 15px);
+                    line-height: 1.5;
+                    text-shadow: 0 0 6px rgba(255,255,255,0.25);
+                    padding: 2% 6%;
+                    gap: 2px;
+                }
+
+                #resultInput .gainLine {
+                    font-weight: bold;
+                    font-size: clamp(14px, 4vw, 18px);
+                }
+
+                #resultConfirmBtn {
+                    position: absolute;
+                    left: 24.48%;
+                    top: 73.64%;
+                    width: 52.80%;
+                    height: 21.39%;
+                    background: transparent;
+                    border: none;
+                    cursor: pointer;
+                    padding: 0;
+                }
+            `}</style>
+        </>
+    );
 }
