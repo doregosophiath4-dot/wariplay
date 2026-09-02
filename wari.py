@@ -969,13 +969,17 @@ WS_MESSAGE_RATE_WINDOW = 10   # 10 secondes — à ajuster selon le rythme réel
 
 
 async def check_ws_message_rate(user_id: int) -> bool:
-    """Retourne True si le message est autorisé, False si la limite est dépassée.
-    À appeler à CHAQUE message reçu dans la boucle WebSocket, après l'auth initiale."""
     redis = await get_redis()
     redis_key = f"ratelimit:ws:{user_id}"
 
     current_count = await redis.incr(redis_key)
-    if current_count == 1:
+
+    # Vérifie le TTL réel à chaque appel plutôt que de supposer que
+    # current_count == 1 signifie "clé neuve" — si jamais la clé existe
+    # déjà sans TTL (bug, redémarrage, ancien code), on la corrige ici
+    # au lieu de la laisser grossir indéfiniment.
+    ttl = await redis.ttl(redis_key)
+    if ttl == -1:
         await redis.expire(redis_key, WS_MESSAGE_RATE_WINDOW)
 
     return current_count <= WS_MESSAGE_RATE_MAX
@@ -5513,16 +5517,66 @@ async def historique_retraits(wari_session):
 
 
 
+
+
+
+
+
+
+
+
+
 # ====================================================================
-# SYSTEME DU JEU CLOUD_RUN
+# FONCTION GENERALE DES JEUX 
 # ====================================================================
 
-from typing import Dict, Optional, Any
+import difflib
+import re
 
-user_sessions: Dict[str, dict] = {}
-game_states: Dict[str, dict] = {}
 
-GAME_DURATION = 120
+def normalize_game_name(text: str) -> str:
+    """Normalise un nom de jeu : minuscule, underscores/tirets -> espace, espaces multiples réduits."""
+    text = text.lower().strip()
+    text = re.sub(r"[_\-]+", " ", text)
+    text = re.sub(r"\s+", " ", text)
+    return text.strip()
+
+
+async def find_and_update_game_players(cursor, game_type: str, similarity_threshold: float = 0.55):
+    """
+    Recherche approximative du jeu dans games1 (colonne name) à partir de game_type,
+    et incrémente sa colonne players de 1 si une correspondance suffisante est trouvée.
+    """
+    normalized_input = normalize_game_name(game_type)
+
+    await cursor.execute("SELECT id, name, players FROM games1")
+    rows = await cursor.fetchall()
+
+    best_id = None
+    best_score = 0.0
+
+    for row in rows:
+        game_id, name, players = row
+        normalized_name = normalize_game_name(name)
+
+        score = difflib.SequenceMatcher(None, normalized_input, normalized_name).ratio()
+
+        # bonus si l'un est inclus dans l'autre (ex: "cloud run" dans "cloud run deluxe")
+        if normalized_input in normalized_name or normalized_name in normalized_input:
+            score = max(score, 0.85)
+
+        if score > best_score:
+            best_score = score
+            best_id = game_id
+
+    if best_id is not None and best_score >= similarity_threshold:
+        await cursor.execute(
+            "UPDATE games1 SET players = players + 1 WHERE id = %s",
+            (best_id,)
+        )
+        return best_id
+    else:
+        return None
 
 
 async def log_game_result(user_id: int, has_won: bool, amount: float, game_type: str = "cloud_run"):
@@ -5536,8 +5590,6 @@ async def log_game_result(user_id: int, has_won: bool, amount: float, game_type:
                     message = f"L'utilisateur {user_id} vient de gagner {amount:.2f} XOF"
                 else:
                     message = f"L'utilisateur {user_id} vient de perdre {amount:.2f} XOF"
-
-                print(f"[log_game_result] user_id={user_id} has_won={has_won} amount={amount} game_type={game_type}")
 
                 # 1️⃣ Historique brut dans stats
                 await cursor.execute(
@@ -5554,7 +5606,6 @@ async def log_game_result(user_id: int, has_won: bool, amount: float, game_type:
                      "win" if has_won else "loss",
                      amount, now, now)
                 )
-                print("[log_game_result] INSERT stats OK")
 
                 # 2️⃣ Compteurs + montants + parties jouées par utilisateur (user_stats)
                 gains_incr = 1 if has_won else 0
@@ -5577,8 +5628,6 @@ async def log_game_result(user_id: int, has_won: bool, amount: float, game_type:
                     """,
                     (user_id, gains_incr, pertes_incr, montant_gain, montant_perte, parties_incr)
                 )
-                print(f"[log_game_result] UPDATE user_stats OK (gains+={gains_incr}, pertes+={pertes_incr}, "
-                      f"montant_gains+={montant_gain:.2f}, montant_pertes+={montant_perte:.2f}, parties+={parties_incr})")
 
                 # 3️⃣ Compteurs + montants + parties jouées du jour, tous users confondus (today_stats)
                 await cursor.execute(
@@ -5595,8 +5644,6 @@ async def log_game_result(user_id: int, has_won: bool, amount: float, game_type:
                     """,
                     (gains_incr, pertes_incr, montant_gain, montant_perte, parties_incr)
                 )
-                print(f"[log_game_result] UPDATE today_stats OK (gains+={gains_incr}, pertes+={pertes_incr}, "
-                      f"montant_gains+={montant_gain:.2f}, montant_pertes+={montant_perte:.2f}, parties+={parties_incr})")
 
                 # 4️⃣ Compteurs + montants + parties jouées globaux all-time (globale_states)
                 await cursor.execute(
@@ -5611,16 +5658,32 @@ async def log_game_result(user_id: int, has_won: bool, amount: float, game_type:
                     """,
                     (gains_incr, pertes_incr, montant_gain, montant_perte, parties_incr)
                 )
-                print(f"[log_game_result] UPDATE globale_states OK (gains+={gains_incr}, pertes+={pertes_incr}, "
-                      f"montant_gains+={montant_gain:.2f}, montant_pertes+={montant_perte:.2f}, parties+={parties_incr})")
+
+                # 5️⃣ Recherche floue du jeu dans games1 et incrémentation de players
+                await find_and_update_game_players(cursor, game_type)
 
                 await conn.commit()
-                print("[log_game_result] COMMIT OK")
 
             except Exception as e:
                 await conn.rollback()
-                print(f"[log_game_result] ERREUR: {e}")
                 raise e
+
+
+
+
+
+# ====================================================================
+# SYSTEME DU JEU CLOUD_RUN
+# ====================================================================
+
+from typing import Dict, Optional, Any
+
+user_sessions: Dict[str, dict] = {}
+game_states: Dict[str, dict] = {}
+
+GAME_DURATION = 120
+
+
 
 
 def validate_payload_consistency(session_id: str, payload: dict, game_state: dict) -> tuple[bool, str]:
