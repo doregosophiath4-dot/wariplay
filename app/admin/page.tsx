@@ -7,6 +7,8 @@ import UsersPage from "@/components/admin/users";
 import PartiesPage from "@/components/admin/parties";
 import ProduitsPage from "@/components/admin/produits";
 import MisesPage from "@/components/admin/mises";
+import DepotsPage from "@/components/admin/depots";
+import RetraitsPage from "@/components/admin/retraits";
 import AnalyticsPage from "@/components/admin/analytics";
 import ParametresPage from "@/components/admin/parametres";
 import type { AdminPage } from "@/components/admin/side";
@@ -28,6 +30,10 @@ export default function AdminPage() {
       return <ProduitsPage currentPage={currentPage} onNavigate={setCurrentPage} />;
     case "mises":
       return <MisesPage currentPage={currentPage} onNavigate={setCurrentPage} />;
+    case "depots":
+      return <DepotsPage currentPage={currentPage} onNavigate={setCurrentPage} />;
+    case "retraits":
+      return <RetraitsPage currentPage={currentPage} onNavigate={setCurrentPage} />;
     case "analytics":
       return <AnalyticsPage currentPage={currentPage} onNavigate={setCurrentPage} />;
     case "parametres":

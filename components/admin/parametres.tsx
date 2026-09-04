@@ -8,7 +8,7 @@ import {
   Globe,
   Mail,
   Image,
-  UserLock,
+  Lock,        // ← à la place de UserLock
   Upload,
 } from "lucide-react";
 import Sidebar, { type AdminPage } from "@/components/admin/side";
@@ -474,7 +474,7 @@ export default function ParametresPage({
 
               <div className="rounded-2xl border border-white/6 bg-[#14142b] p-5 transition hover:border-[#00c896]/20 sm:p-6">
                 <h3 className="mb-4 flex items-center gap-2.5 text-base font-semibold text-white">
-                  <UserLock className="h-5 w-5 text-[#00c896]" />
+                  <Lock className="h-5 w-5 text-[#00c896]" />
                   Gestion des accès
                 </h3>
 

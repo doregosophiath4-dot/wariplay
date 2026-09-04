@@ -7,6 +7,8 @@ import {
   Gamepad2,
   Package,
   Coins,
+  ArrowDownToLine,
+  ArrowUpFromLine,
   LineChart,
   Settings,
   X,
@@ -19,6 +21,8 @@ export type AdminPage =
   | "parties"
   | "produits"
   | "mises"
+  | "depots"
+  | "retraits"
   | "analytics"
   | "parametres";
 
@@ -29,20 +33,32 @@ interface SidebarProps {
   onClose?: () => void;
 }
 
-export default function Sidebar({ open, active, onNavigate, onClose }: SidebarProps) {
+export default function Sidebar({
+  open,
+  active,
+  onNavigate,
+  onClose,
+}: SidebarProps) {
   const links: { icon: any; label: string; key: AdminPage }[] = [
     { icon: Home, label: "Dashboard", key: "dashboard" },
     { icon: Users, label: "Utilisateurs", key: "users" },
     { icon: Gamepad2, label: "Parties", key: "parties" },
     { icon: Package, label: "Produits", key: "produits" },
     { icon: Coins, label: "Mises", key: "mises" },
+    { icon: ArrowDownToLine, label: "Dépôts", key: "depots" },
+    { icon: ArrowUpFromLine, label: "Retraits", key: "retraits" },
     { icon: LineChart, label: "Analytics", key: "analytics" },
     { icon: Settings, label: "Paramètres", key: "parametres" },
   ];
 
+  const handleNavigate = (page: AdminPage) => {
+    onNavigate(page);
+    onClose?.();
+  };
+
   return (
     <>
-      {/* Overlay pour mobile */}
+      {/* Overlay mobile */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -56,23 +72,26 @@ export default function Sidebar({ open, active, onNavigate, onClose }: SidebarPr
         )}
       </AnimatePresence>
 
-      {/* Sidebar - CHANGEMENT 1: même couleur que le header */}
+      {/* Sidebar — même fond que le header */}
       <aside
-        className={`fixed z-[100] h-screen w-[260px] border-r border-white/6 bg-[#14142b] p-6 transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+        id="sidebar"
+        className={`fixed z-[100] h-screen w-[260px] border-r border-white/6 bg-[#14142b] p-4 transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] sm:p-5 md:p-6 ${
           open ? "translate-x-0" : "-translate-x-full"
         } md:translate-x-0`}
       >
-        <div className="mb-10 flex items-center justify-between gap-3 px-3 text-xl font-bold text-white">
-          <div className="flex items-center gap-3">
-            <PieChart className="h-6 w-6 text-[#00c896]" />
-            <span>AdminPro</span>
+        <div className="mb-8 flex items-center justify-between gap-3 px-2 sm:mb-9 md:mb-10">
+          <div className="flex items-center gap-3 text-xl font-bold text-white">
+            <PieChart className="h-6 w-6 shrink-0 text-[#00c896]" />
+            <span className="hidden sm:inline">AdminPro</span>
+            <span className="sm:hidden">AP</span>
           </div>
-          
-          {/* CHANGEMENT 2: Croix de fermeture qui répond */}
+
+          {/* Croix de fermeture — mobile uniquement */}
           <button
+            type="button"
             onClick={onClose}
-            className="rounded-lg p-1 text-white/60 transition hover:bg-white/5 hover:text-white md:hidden"
-            aria-label="Fermer"
+            className="rounded-lg p-1.5 text-white/60 transition hover:bg-white/5 hover:text-white md:hidden"
+            aria-label="Fermer le menu"
           >
             <X className="h-5 w-5" />
           </button>
@@ -82,20 +101,19 @@ export default function Sidebar({ open, active, onNavigate, onClose }: SidebarPr
           {links.map((item) => (
             <button
               key={item.key}
-              onClick={() => {
-                onNavigate(item.key);
-                if (window.innerWidth < 768 && onClose) {
-                  onClose();
-                }
-              }}
-              className={`flex w-full items-center gap-3.5 rounded-xl px-4 py-3 text-left text-[0.95rem] font-medium transition-all ${
+              type="button"
+              onClick={() => handleNavigate(item.key)}
+              className={`flex w-full items-center gap-3.5 rounded-xl px-3 py-2.5 text-left text-[0.9rem] font-medium transition-all sm:px-3.5 sm:py-3 md:px-4 md:text-[0.95rem] ${
                 active === item.key
                   ? "bg-white/5 text-white"
-                  : "text-white/60 hover:bg-white/5 hover:text-white"
+                  : "text-white/50 hover:bg-white/5 hover:text-white"
               }`}
             >
               <item.icon className="h-5 w-5 shrink-0" strokeWidth={2} />
-              {item.label}
+              <span className="truncate">{item.label}</span>
+              {active === item.key && (
+                <span className="ml-auto h-1.5 w-1.5 rounded-full bg-[#00c896]" />
+              )}
             </button>
           ))}
         </nav>

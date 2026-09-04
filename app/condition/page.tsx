@@ -1,10 +1,12 @@
-'use client'
-
-import { useEffect, useRef } from 'react'
+// app/condition/page.tsx
 import Link from 'next/link'
-import { motion } from 'framer-motion'
+import AnimatedSection from '@/components/legal/AnimatedSection'
+import LegalSection from '@/components/legal/LegalSection'
+import BulletList from '@/components/legal/BulletList'
 
-// SVG Icons
+// =====================================================
+// SVG ICONS
+// =====================================================
 const ChevronRightIcon = () => (
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="9 18 15 12 9 6" />
@@ -47,281 +49,227 @@ const LinkedinIcon = () => (
   </svg>
 )
 
+// =====================================================
+// DONNEES STATIQUES
+// =====================================================
+const footerLinks = [
+  { href: '/3x', label: 'Accueil' },
+  { href: '/offre', label: 'Nos offres' },
+  { href: '/jeux', label: 'Jeux' },
+  { href: '/strategie', label: 'Strategies' },
+  { href: '/equipe', label: 'A propos' }
+]
+
+const legalLinks = [
+  { href: '#', label: "Conditions d'utilisation" },
+  { href: '#', label: 'Politique de confidentialite' },
+  { href: '#', label: 'Politique des cookies' },
+  { href: '/chat', label: 'FAQ' }
+]
+
+const socialLinks = [
+  { icon: <FacebookIcon />, url: '#', label: 'Facebook' },
+  { icon: <TwitterIcon />, url: '#', label: 'Twitter' },
+  { icon: <InstagramIcon />, url: '#', label: 'Instagram' },
+  { icon: <LinkedinIcon />, url: '#', label: 'LinkedIn' }
+]
+
+// =====================================================
+// COMPOSANT PRINCIPAL
+// =====================================================
 export default function ConditionPage() {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null)
-
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    const resize = () => {
-      canvas.width = window.innerWidth
-      canvas.height = window.innerHeight
-    }
-    resize()
-    window.addEventListener('resize', resize)
-
-    let time = 0
-
-    const draw = () => {
-      if (!ctx || !canvas) return
-      ctx.fillStyle = 'rgba(10, 10, 26, 0.15)'
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
-      time += 0.008
-
-      for (let waveIndex = 0; waveIndex < 5; waveIndex++) {
-        ctx.beginPath()
-        ctx.strokeStyle = `hsla(${200 + waveIndex * 15}, 80%, ${45 + waveIndex * 5}%, ${0.06 + waveIndex * 0.02})`
-        ctx.lineWidth = 1.2 + waveIndex * 0.2
-        
-        for (let x = 0; x < canvas.width; x += 5) {
-          const y = 
-            canvas.height * 0.4 + 
-            Math.sin(x * 0.003 + time * 0.5 + waveIndex) * 50 +
-            Math.cos(x * 0.001 + time * 0.3) * 70 +
-            Math.sin(x * 0.005 + waveIndex * 1.5) * 30 +
-            waveIndex * 55
-
-          if (x === 0) ctx.moveTo(x, y)
-          else ctx.lineTo(x, y)
-        }
-        ctx.stroke()
-      }
-
-      for (let i = 0; i < 12; i++) {
-        const px = (Math.sin(time * 0.7 + i * 2.1) * 0.5 + 0.5) * canvas.width
-        const py = (Math.cos(time * 0.5 + i * 1.7) * 0.5 + 0.5) * canvas.height
-        const radius = 1 + Math.sin(time * 2 + i) * 0.5
-        
-        ctx.beginPath()
-        ctx.arc(px, py, radius, 0, Math.PI * 2)
-        ctx.fillStyle = `hsla(${180 + i * 20}, 80%, 60%, ${0.08 + Math.sin(time + i) * 0.04})`
-        ctx.fill()
-      }
-
-      requestAnimationFrame(draw)
-    }
-    draw()
-
-    return () => window.removeEventListener('resize', resize)
-  }, [])
-
-  const footerLinks = [
-    { href: '/3x', label: 'Accueil' },
-    { href: '/offre', label: 'Nos offres' },
-    { href: '/jeux', label: 'Jeux' },
-    { href: '/strategie', label: 'Strategies' },
-    { href: '/equipe', label: 'A propos' }
-  ]
-
-  const legalLinks = [
-    { href: '#', label: "Conditions d'utilisation" },
-    { href: '#', label: 'Politique de confidentialite' },
-    { href: '#', label: 'Politique des cookies' },
-    { href: '/chat', label: 'FAQ' }
-  ]
-
-  const socialLinks = [
-    { icon: <FacebookIcon />, url: '#', label: 'Facebook' },
-    { icon: <TwitterIcon />, url: '#', label: 'Twitter' },
-    { icon: <InstagramIcon />, url: '#', label: 'Instagram' },
-    { icon: <LinkedinIcon />, url: '#', label: 'LinkedIn' }
-  ]
-
   return (
-    <div className="relative min-h-screen text-white overflow-x-hidden" style={{ background: '#0a0a1a' }}>
-      <canvas ref={canvasRef} className="fixed inset-0 w-full h-full z-0 pointer-events-none" style={{ opacity: 0.4 }} />
-      
-      <div className="fixed w-[300px] sm:w-[400px] md:w-[500px] h-[300px] sm:h-[400px] md:h-[500px] rounded-full pointer-events-none z-0 -top-[15%] -right-[10%] animate-[float1_12s_ease-in-out_infinite]" 
-        style={{ background: 'radial-gradient(circle, rgba(0,200,150,0.06) 0%, transparent 70%)', filter: 'blur(80px)' }} />
-      <div className="fixed w-[250px] sm:w-[350px] md:w-[400px] h-[250px] sm:h-[350px] md:h-[400px] rounded-full pointer-events-none z-0 -bottom-[10%] -left-[5%] animate-[float2_15s_ease-in-out_infinite]" 
-        style={{ background: 'radial-gradient(circle, rgba(108,92,231,0.05) 0%, transparent 70%)', filter: 'blur(80px)' }} />
-      <div className="fixed w-[200px] sm:w-[250px] md:w-[300px] h-[200px] sm:h-[250px] md:h-[300px] rounded-full pointer-events-none z-0 top-[40%] left-[60%] animate-[float1_10s_ease-in-out_infinite]" 
-        style={{ background: 'radial-gradient(circle, rgba(255,107,53,0.04) 0%, transparent 70%)', filter: 'blur(60px)' }} />
-
-      <div className="relative z-10 pt-24 sm:pt-28 md:pt-32 pb-8 px-4 sm:px-6">
+    <div className="relative min-h-screen text-white overflow-x-hidden">
+      <div className="relative z-10 pt-24 sm:pt-28 md:pt-32 pb-8 px-4 sm:px-6 space-y-10 sm:space-y-14">
         
-        {/* Conditions Generales d'Utilisation */}
-        <motion.div
-          className="max-w-3xl mx-auto mb-10 sm:mb-14 p-6 sm:p-8 md:p-10 rounded-2xl sm:rounded-3xl border relative before:block before:w-12 sm:before:w-16 before:h-0.5 sm:before:h-1 before:rounded before:bg-gradient-to-r before:from-emerald-400 before:to-purple-500 before:mx-auto before:mb-6 sm:before:mb-8"
-          style={{ 
-            background: 'rgba(26, 26, 46, 0.75)', 
-            backdropFilter: 'blur(15px)',
-            borderColor: 'rgba(0, 200, 150, 0.12)',
-            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)'
-          }}
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-emerald-400 text-center mb-2">Conditions Generales d&apos;Utilisation</h1>
-          <p className="text-center text-white/40 italic text-xs sm:text-sm mb-6 sm:mb-8">Derniere mise a jour : 01 Aout 2025</p>
+        {/* ============================================ */}
+        {/* CONDITIONS GENERALES D'UTILISATION */}
+        {/* ============================================ */}
+        <AnimatedSection trigger="onMount">
+          <LegalSection title="Conditions Generales d'Utilisation" lastUpdated="01 Aout 2025">
 
-          <div className="space-y-5 sm:space-y-6">
             <div>
               <h2 className="text-lg sm:text-xl font-semibold text-purple-400 mb-2 sm:mb-3">1. Acceptation des conditions</h2>
-              <p className="text-white/65 text-sm sm:text-base leading-relaxed">En accedant et en utilisant la plateforme WariPlay, vous acceptez sans reserve les presentes Conditions Generales d&apos;Utilisation.</p>
+              <p className="text-white/65 text-sm sm:text-base leading-relaxed">
+                En accedant a WariPlay, vous acceptez sans reserve les conditions de la plateforme decrites ci-dessous.
+              </p>
             </div>
 
             <div>
-              <h2 className="text-lg sm:text-xl font-semibold text-purple-400 mb-2 sm:mb-3">2. Description du service</h2>
-              <p className="text-white/65 text-sm sm:text-base leading-relaxed">WariPlay est une plateforme de jeux en ligne offrant des opportunites de gains reels selon les modalites decrites pour chaque jeu.</p>
+              <h2 className="text-lg sm:text-xl font-semibold text-purple-400 mb-2 sm:mb-3">2. Eligibilite et conformite legale</h2>
+              <BulletList items={[
+                "Vous devez avoir au moins 18 ans, ou l'age legal en vigueur dans votre pays, pour utiliser la plateforme",
+                "Vous reconnaissez utiliser la plateforme conformement aux lois et reglements en vigueur dans votre pays ou region",
+                "Vous acceptez d'avoir un seul compte sur la plateforme"
+              ]} />
             </div>
 
             <div>
-              <h2 className="text-lg sm:text-xl font-semibold text-purple-400 mb-2 sm:mb-3">3. Compte utilisateur</h2>
-              <ul className="space-y-2">
-                {['Vous devez avoir au moins 18 ans pour creer un compte', 'Vous etes responsable de la confidentialite de vos identifiants', 'Un seul compte par personne est autorise'].map((item, i) => (
-                  <li key={i} className="flex items-start gap-2.5 text-white/65 text-sm sm:text-base">
-                    <span className="text-emerald-400 font-bold mt-0.5 flex-shrink-0">•</span>
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
+              <h2 className="text-lg sm:text-xl font-semibold text-purple-400 mb-2 sm:mb-3">3. Depots et retraits</h2>
+              <BulletList items={[
+                'Vous acceptez les conditions de depot et les frais de retrait applicables sur la plateforme',
+                'Vous acceptez de vous conformer au montant minimal de depot et de retrait exige par la plateforme'
+              ]} />
             </div>
 
             <div>
-              <h2 className="text-lg sm:text-xl font-semibold text-purple-400 mb-2 sm:mb-3">4. Regles des jeux</h2>
-              <p className="text-white/65 text-sm sm:text-base leading-relaxed">Chaque jeu possede ses propres regles disponibles dans sa section dediee. Tout non-respect des regles peut entrainer la suspension du compte.</p>
+              <h2 className="text-lg sm:text-xl font-semibold text-purple-400 mb-2 sm:mb-3">4. Mises et objectifs</h2>
+              <BulletList items={[
+                'Vous acceptez la mise minimale exigee par la plateforme, ainsi que la mise minimale specifique a chaque jeu',
+                "Vous acceptez l'obligation de remplir l'objectif qui vous sera assigne",
+                "Vous acceptez de perdre votre mise si l'objectif assigne n'est pas rempli",
+                'Vous acceptez de vous conformer aux regles et exigences propres a chaque jeu'
+              ]} />
             </div>
 
             <div>
-              <h2 className="text-lg sm:text-xl font-semibold text-purple-400 mb-2 sm:mb-3">5. Gains et paiements</h2>
-              <ul className="space-y-2">
-                {['Les gains sont credites selon les conditions specifiques a chaque jeu', 'Un seuil minimal de 1000 FCFA est requis pour effectuer un retrait', 'Les paiements sont effectues sous 72 heures ouvrables'].map((item, i) => (
-                  <li key={i} className="flex items-start gap-2.5 text-white/65 text-sm sm:text-base">
-                    <span className="text-emerald-400 font-bold mt-0.5 flex-shrink-0">•</span>
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
+              <h2 className="text-lg sm:text-xl font-semibold text-purple-400 mb-2 sm:mb-3">5. Achats et systeme de progression</h2>
+              <BulletList items={[
+                "Vous acceptez d'acheter certains elements sur la plateforme conformement au montant fixe pour chaque produit",
+                'Vous acceptez le systeme de vies mis en place pour chaque jeu',
+                'Vous acceptez de commencer par un niveau propose a la vente et disponible pour vous familiariser avec le fonctionnement du systeme'
+              ]} />
             </div>
 
             <div>
-              <h2 className="text-lg sm:text-xl font-semibold text-purple-400 mb-2 sm:mb-3">6. Responsabilites</h2>
-              <p className="text-white/65 text-sm sm:text-base leading-relaxed">WariPlay decline toute responsabilite en cas d&apos;utilisation frauduleuse de votre compte ou de non-respect des regles etablies.</p>
+              <h2 className="text-lg sm:text-xl font-semibold text-purple-400 mb-2 sm:mb-3">6. Responsabilite des pertes</h2>
+              <p className="text-white/65 text-sm sm:text-base leading-relaxed">
+                Vous reconnaissez etre seul responsable de vos pertes, que celles-ci resultent d'un objectif non rempli, d'une erreur reseau ou d'une erreur serveur.
+              </p>
             </div>
 
             <div>
-              <h2 className="text-lg sm:text-xl font-semibold text-purple-400 mb-2 sm:mb-3">7. Modifications</h2>
-              <p className="text-white/65 text-sm sm:text-base leading-relaxed">Nous nous reservons le droit de modifier ces conditions a tout moment. Les utilisateurs en seront informes par email.</p>
+              <h2 className="text-lg sm:text-xl font-semibold text-purple-400 mb-2 sm:mb-3">7. Responsabilite personnelle</h2>
+              <p className="text-white/65 text-sm sm:text-base leading-relaxed">
+                Vous reconnaissez etre responsable de vous-meme, de la facon dont vous jouez, et des resultats de votre jeu, qu'il s'agisse de gains ou de pertes.
+              </p>
             </div>
-          </div>
 
-          <div className="mt-8 sm:mt-10 text-right">
-            <p className="text-purple-400/60 italic text-xs sm:text-sm">Document valide a compter du 01/08/2025</p>
-          </div>
-        </motion.div>
+            <div>
+              <h2 className="text-lg sm:text-xl font-semibold text-purple-400 mb-2 sm:mb-3">8. Partage et diffusion</h2>
+              <p className="text-white/65 text-sm sm:text-base leading-relaxed">
+                Vous acceptez de partager la plateforme publiquement de maniere responsable et adaptee a votre entourage.
+              </p>
+            </div>
 
-        {/* Politique de Confidentialite */}
-        <motion.div
-          className="max-w-3xl mx-auto mb-10 sm:mb-14 p-6 sm:p-8 md:p-10 rounded-2xl sm:rounded-3xl border relative before:block before:w-12 sm:before:w-16 before:h-0.5 sm:before:h-1 before:rounded before:bg-gradient-to-r before:from-emerald-400 before:to-purple-500 before:mx-auto before:mb-6 sm:before:mb-8"
-          style={{ 
-            background: 'rgba(26, 26, 46, 0.75)', 
-            backdropFilter: 'blur(15px)',
-            borderColor: 'rgba(0, 200, 150, 0.12)',
-            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)'
-          }}
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-        >
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-emerald-400 text-center mb-2">Politique de Confidentialite</h1>
-          <p className="text-center text-white/40 italic text-xs sm:text-sm mb-6 sm:mb-8">Derniere mise a jour : 01 Aout 2025</p>
+            <div>
+              <h2 className="text-lg sm:text-xl font-semibold text-purple-400 mb-2 sm:mb-3">9. Gains, paiements et parrainage</h2>
+              <BulletList items={[
+                'Vous acceptez les conditions de gains propres a chaque jeu',
+                'Vous acceptez les methodes de paiement proposees par la plateforme',
+                'Vous acceptez les conditions de parrainage et de recompenses liees a la plateforme'
+              ]} />
+            </div>
 
-          <div className="space-y-5 sm:space-y-6">
+            <div>
+              <h2 className="text-lg sm:text-xl font-semibold text-purple-400 mb-2 sm:mb-3">10. Mise en garde</h2>
+              <p className="text-white/65 text-sm sm:text-base leading-relaxed">
+                Nous sommes conscients que des plateformes similaires ont pu, par le passe, s'averer etre des arnaques. Nous vous encourageons donc a prendre le temps d'analyser la plateforme, de verifier les avis existants, et de vous assurer d'etre bien sur la plateforme officielle avant toute utilisation.
+              </p>
+            </div>
+
+            <div>
+              <h2 className="text-lg sm:text-xl font-semibold text-purple-400 mb-2 sm:mb-3">11. Triche et fraude</h2>
+              <p className="text-white/65 text-sm sm:text-base leading-relaxed">
+                Toute manipulation, tentative de triche ou de vol entraine la suppression immediate du compte concerne et un bannissement pouvant aller jusqu'a plusieurs annees.
+              </p>
+            </div>
+
+            <div>
+              <h2 className="text-lg sm:text-xl font-semibold text-purple-400 mb-2 sm:mb-3">12. Propriete intellectuelle</h2>
+              <p className="text-white/65 text-sm sm:text-base leading-relaxed">
+                Toute reproduction ou copie, sous quelque forme que ce soit, de la plateforme est strictement interdite. Toute violation de cette clause pourra faire l'objet de poursuites judiciaires.
+              </p>
+            </div>
+
+            <div>
+              <h2 className="text-lg sm:text-xl font-semibold text-purple-400 mb-2 sm:mb-3">13. Renonciation aux recours</h2>
+              <p className="text-white/65 text-sm sm:text-base leading-relaxed">
+                Vous reconnaissez avoir pris connaissance de l'ensemble de ces conditions. Aucune plainte relative a l'une des clauses du present contrat ne sera acceptee ni retenue, et aucune poursuite judiciaire fondee sur ces regles ne sera recevable.
+              </p>
+            </div>
+
+            <div>
+              <h2 className="text-lg sm:text-xl font-semibold text-purple-400 mb-2 sm:mb-3">14. Recommandations d'usage</h2>
+              <p className="text-white/65 text-sm sm:text-base leading-relaxed">
+                Nous vous conseillons de lire attentivement ces conditions, de verifier votre connexion internet avant chaque partie, et de conserver une pratique de jeu saine et raisonnable afin de profiter pleinement des avantages de la plateforme.
+              </p>
+            </div>
+
+          </LegalSection>
+        </AnimatedSection>
+
+        {/* ============================================ */}
+        {/* POLITIQUE DE CONFIDENTIALITE */}
+        {/* ============================================ */}
+        <AnimatedSection trigger="onScroll">
+          <LegalSection title="Politique de Confidentialite" lastUpdated="01 Aout 2025">
+
             <div>
               <h2 className="text-lg sm:text-xl font-semibold text-purple-400 mb-2 sm:mb-3">1. Donnees collectees</h2>
               <p className="text-white/65 text-sm sm:text-base mb-2">Nous collectons :</p>
-              <ul className="space-y-2">
-                {['Informations personnelles (nom, prenom, email)', 'Donnees de paiement (via notre partenaire securise)', 'Historique de jeu et transactions'].map((item, i) => (
-                  <li key={i} className="flex items-start gap-2.5 text-white/65 text-sm sm:text-base">
-                    <span className="text-emerald-400 font-bold mt-0.5 flex-shrink-0">•</span>
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
+              <BulletList items={[
+                'Informations personnelles (nom, prenom, email)',
+                'Donnees de paiement (via notre partenaire securise)',
+                'Historique de jeu et transactions'
+              ]} />
             </div>
 
             <div>
               <h2 className="text-lg sm:text-xl font-semibold text-purple-400 mb-2 sm:mb-3">2. Utilisation des donnees</h2>
               <p className="text-white/65 text-sm sm:text-base mb-2">Vos donnees sont utilisees pour :</p>
-              <ul className="space-y-2">
-                {['Fournir et ameliorer nos services', 'Verifier votre identite', 'Effectuer les paiements', 'Envoyer des communications importantes'].map((item, i) => (
-                  <li key={i} className="flex items-start gap-2.5 text-white/65 text-sm sm:text-base">
-                    <span className="text-emerald-400 font-bold mt-0.5 flex-shrink-0">•</span>
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
+              <BulletList items={[
+                'Fournir et ameliorer nos services',
+                'Verifier votre identite',
+                'Effectuer les paiements',
+                'Envoyer des communications importantes'
+              ]} />
             </div>
 
             <div>
               <h2 className="text-lg sm:text-xl font-semibold text-purple-400 mb-2 sm:mb-3">3. Protection des donnees</h2>
               <p className="text-white/65 text-sm sm:text-base mb-2">Nous utilisons des mesures de securite avancees incluant :</p>
-              <ul className="space-y-2">
-                {['Chiffrement SSL 256-bit', 'Stockage securise des donnees', 'Acces restreint au personnel autorise'].map((item, i) => (
-                  <li key={i} className="flex items-start gap-2.5 text-white/65 text-sm sm:text-base">
-                    <span className="text-emerald-400 font-bold mt-0.5 flex-shrink-0">•</span>
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
+              <BulletList items={[
+                'Chiffrement SSL 256-bit pour toutes les communications',
+                'Stockage securise des donnees avec acces restreint',
+                'Acces limite au personnel strictement autorise',
+                'Systemes de detection et de prevention des intrusions',
+                'Protection contre les attaques DDoS (Distributed Denial of Service)'
+              ]} />
+              <p className="text-white/65 text-sm sm:text-base mt-3 leading-relaxed">
+                Nous utilisons egalement des systemes anti-abus et anti-bot, incluant Google reCAPTCHA, afin de proteger la plateforme contre les activites frauduleuses, les tentatives d&apos;automatisation et les comportements malveillants. Ces dispositifs nous permettent d&apos;assurer un environnement de jeu securise et equitable pour tous les utilisateurs.
+              </p>
             </div>
 
             <div>
               <h2 className="text-lg sm:text-xl font-semibold text-purple-400 mb-2 sm:mb-3">4. Partage des donnees</h2>
               <p className="text-white/65 text-sm sm:text-base mb-2">Vos donnees ne sont partagees qu&apos;avec :</p>
-              <ul className="space-y-2">
-                {['Nos processeurs de paiement agrees', 'Les autorites si requis par la loi'].map((item, i) => (
-                  <li key={i} className="flex items-start gap-2.5 text-white/65 text-sm sm:text-base">
-                    <span className="text-emerald-400 font-bold mt-0.5 flex-shrink-0">•</span>
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
+              <BulletList items={[
+                'Nos processeurs de paiement agrees',
+                'Les autorites si requis par la loi'
+              ]} />
             </div>
 
             <div>
               <h2 className="text-lg sm:text-xl font-semibold text-purple-400 mb-2 sm:mb-3">5. Vos droits</h2>
               <p className="text-white/65 text-sm sm:text-base mb-2">Conformement au RGPD, vous pouvez :</p>
-              <ul className="space-y-2">
-                {['Acceder a vos donnees', 'Demander leur rectification', 'Demander leur suppression', 'Vous opposer a leur traitement'].map((item, i) => (
-                  <li key={i} className="flex items-start gap-2.5 text-white/65 text-sm sm:text-base">
-                    <span className="text-emerald-400 font-bold mt-0.5 flex-shrink-0">•</span>
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
+              <BulletList items={[
+                'Acceder a vos donnees',
+                'Demander leur rectification',
+                'Demander leur suppression',
+                'Vous opposer a leur traitement'
+              ]} />
             </div>
-          </div>
 
-          <div className="mt-8 sm:mt-10 text-right">
-            <p className="text-purple-400/60 italic text-xs sm:text-sm">Document valide a compter du 01/08/2025</p>
-          </div>
-        </motion.div>
+          </LegalSection>
+        </AnimatedSection>
 
-        {/* Politique relative aux Cookies */}
-        <motion.div
-          className="max-w-3xl mx-auto mb-10 sm:mb-14 p-6 sm:p-8 md:p-10 rounded-2xl sm:rounded-3xl border relative before:block before:w-12 sm:before:w-16 before:h-0.5 sm:before:h-1 before:rounded before:bg-gradient-to-r before:from-emerald-400 before:to-purple-500 before:mx-auto before:mb-6 sm:before:mb-8"
-          style={{ 
-            background: 'rgba(26, 26, 46, 0.75)', 
-            backdropFilter: 'blur(15px)',
-            borderColor: 'rgba(0, 200, 150, 0.12)',
-            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)'
-          }}
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-        >
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-emerald-400 text-center mb-2">Politique relative aux Cookies</h1>
-          <p className="text-center text-white/40 italic text-xs sm:text-sm mb-6 sm:mb-8">Derniere mise a jour : 01 Aout 2025</p>
+        {/* ============================================ */}
+        {/* POLITIQUE RELATIVE AUX COOKIES */}
+        {/* ============================================ */}
+        <AnimatedSection trigger="onScroll">
+          <LegalSection title="Politique relative aux Cookies" lastUpdated="01 Aout 2025">
 
-          <div className="space-y-5 sm:space-y-6">
             <div>
               <h2 className="text-lg sm:text-xl font-semibold text-purple-400 mb-2 sm:mb-3">1. Qu&apos;est-ce qu&apos;un cookie ?</h2>
               <p className="text-white/65 text-sm sm:text-base leading-relaxed">Un cookie est un petit fichier texte stocke sur votre appareil lorsque vous visitez un site web.</p>
@@ -372,23 +320,22 @@ export default function ConditionPage() {
               <h2 className="text-lg sm:text-xl font-semibold text-purple-400 mb-2 sm:mb-3">4. Cookies tiers</h2>
               <p className="text-white/65 text-sm sm:text-base leading-relaxed">Certains services integres (paiement, analyse) peuvent deposer leurs propres cookies.</p>
             </div>
-          </div>
 
-          <div className="mt-8 sm:mt-10 text-right">
-            <p className="text-purple-400/60 italic text-xs sm:text-sm">Document valide a compter du 01/08/2025</p>
-          </div>
-        </motion.div>
+          </LegalSection>
+        </AnimatedSection>
 
       </div>
 
-      {/* Footer */}
+      {/* ============================================ */}
+      {/* FOOTER */}
+      {/* ============================================ */}
       <footer className="relative z-10 py-12 sm:py-16 px-5 sm:px-8 border-t border-emerald-400/10" style={{ background: 'rgba(10, 10, 26, 0.95)' }}>
         <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-10">
           
           <div>
             <img src="/img/WariPlay_Logo_Transparent.png" alt="WariPlay" className="h-10 sm:h-11 mb-3 brightness-0 invert" />
             <p className="text-white/50 text-xs sm:text-sm leading-relaxed mb-4">
-              WariPlay - La plateforme de jeux remunerateurs leader en Afrique, combinant divertissement et opportunites financieres.
+              WariPlay - La plateforme de jeux remunerateurs leader, combinant divertissement et opportunites financieres.
             </p>
             <div className="flex gap-2.5">
               {socialLinks.map((social, i) => (
@@ -432,15 +379,11 @@ export default function ConditionPage() {
               <li className="flex items-center gap-2.5 text-white/50 text-xs sm:text-sm">
                 <span className="text-purple-400 w-4 flex justify-center"><MailIcon /></span> wariplay6@.com
               </li>
-              <li className="flex items-center gap-2.5 text-white/50 text-xs sm:text-sm">
-                <span className="text-purple-400 w-4 flex justify-center"><MapPinIcon /></span> Benin
-              </li>
             </ul>
           </div>
         </div>
 
         <div className="max-w-6xl mx-auto mt-10 sm:mt-12 pt-6 sm:pt-8 border-t border-white/[0.06] flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-4">
-          <span className="text-white/40 text-xs sm:text-sm">#Mobile Money</span>
           <span className="text-white/30 text-[10px] sm:text-xs">&copy; 2024 WariPlay. Tous droits reserves.</span>
         </div>
       </footer>
