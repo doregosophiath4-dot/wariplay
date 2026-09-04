@@ -19,11 +19,6 @@ import { formatNumber, formatGameNameForUrl } from '@/lib/format'
 import GameCard, { type Game } from './GameCard'
 
 // =====================================================
-// CONSTANTES STATIQUES (hors du composant)
-// =====================================================
-const CATEGORIES = ['Tous', 'Action', 'Strategie', 'Sport', 'Puzzle', 'Aventure', 'Premium']
-
-// =====================================================
 // ICÔNES SPÉCIFIQUES À CETTE PAGE
 // =====================================================
 export const PlayIcon = () => (
@@ -83,7 +78,6 @@ export default function GamesPageClient() {
   const [dataLoaded, setDataLoaded] = useState(false)
   const [showAlertModal, setShowAlertModal] = useState(false)
   const [alertData, setAlertData] = useState({ title: '', message: '', buttons: [] as { text: string; action: () => void }[] })
-  const [proCheckLoading, setProCheckLoading] = useState<string | null>(null)
 
   // =====================================================
   // CHARGEMENT DES JEUX
@@ -99,18 +93,21 @@ export default function GamesPageClient() {
         if (!res.ok) throw new Error('Erreur chargement des jeux')
         const data = await res.json()
         if (!cancelled && data && Array.isArray(data)) {
+          // L'API filtre déjà sur disponible = 1 et renvoie has_access
+          // calculé côté serveur (vip + achat de l'utilisateur en session)
           const loadedGames: Game[] = data.map((game: any, index: number) => ({
             id: game.id || index + 1,
             name: game.name,
             image_url: game.image_url || '/img/WariPlay_Logo_Transparent.png',
-            category: game.category || 'Action',
+            category: game.categories || 'Autre',
             players: game.players || 0,
             rating: game.rating || 4.5,
             plays: formatNumber(game.players || 0),
             description: game.description || '',
             isHot: game.isHot || false,
             isNew: game.isNew || false,
-            isPremium: game.isPremium || false
+            isPremium: game.vip || false,
+            hasAccess: game.has_access !== false
           }))
           setGames(loadedGames)
           const featured = loadedGames.slice(0, Math.min(3, loadedGames.length))
@@ -142,6 +139,22 @@ export default function GamesPageClient() {
     const interval = setInterval(() => setCurrentSlide(prev => (prev + 1) % featuredGames.length), 4000)
     return () => clearInterval(interval)
   }, [featuredGames.length])
+
+  // =====================================================
+  // CATÉGORIES DYNAMIQUES - calculées depuis les jeux chargés
+  // =====================================================
+  const categories = useMemo(() => {
+    const unique = Array.from(new Set(games.map(g => g.category).filter(Boolean)))
+    unique.sort((a, b) => a.localeCompare(b))
+    return ['Tous', ...unique]
+  }, [games])
+
+  // Si la catégorie active n'existe plus dans les jeux chargés, on revient à "Tous"
+  useEffect(() => {
+    if (activeCategory !== 'Tous' && !categories.includes(activeCategory)) {
+      setActiveCategory('Tous')
+    }
+  }, [categories, activeCategory])
 
   // =====================================================
   // FILTRAGE DES JEUX - MEMOISÉ
@@ -183,53 +196,20 @@ export default function GamesPageClient() {
     router.push('/' + formattedName)
   }, [router])
 
-  const handleCheckProAccess = useCallback(async (game: Game) => {
+  // has_access est déjà connu (calculé côté serveur dans /api/get-games) :
+  // accès direct au jeu si débloqué, redirection directe vers /store sinon
+  // (plus de popup "Version Pro requise" avec Annuler/Obtenir)
+  const handlePlayGame = useCallback((game: Game) => {
     const formattedName = formatGameNameForUrl(game.name)
-    setProCheckLoading(game.name)
     setShowGameOverlay(false)
     setShowPlayOptions(false)
-    setLoadingText('Verification...')
-    setShowLoading(true)
-    try {
-      const res = await fetchWithAllTokens('/api/check-pro-access', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ game_name: game.name })
-      })
-      const data = await res.json()
-      if (data.has_access) { 
-        router.push('/' + formattedName + '1') 
-      } else if (data.requires_login) {
-        setAlertData({ 
-          title: 'Connexion requise', 
-          message: 'Vous devez vous connecter.', 
-          buttons: [
-            { text: 'Annuler', action: () => setShowAlertModal(false) },
-            { text: 'Se connecter', action: () => { router.push('/connexion'); setShowAlertModal(false) } }
-          ]
-        })
-        setShowAlertModal(true)
-      } else {
-        setAlertData({ 
-          title: 'Version Pro', 
-          message: data.message || 'Acces Pro requis.', 
-          buttons: [
-            { text: 'Annuler', action: () => setShowAlertModal(false) },
-            { text: 'Obtenir', action: () => { router.push('/store'); setShowAlertModal(false) } }
-          ]
-        })
-        setShowAlertModal(true)
-      }
-    } catch (error) {
-      setAlertData({ 
-        title: 'Erreur', 
-        message: 'Une erreur est survenue.', 
-        buttons: [{ text: 'OK', action: () => setShowAlertModal(false) }] 
-      })
-      setShowAlertModal(true)
-    } finally {
-      setProCheckLoading(null)
-      setShowLoading(false)
+
+    if (!game.isPremium || game.hasAccess) {
+      router.push('/' + formattedName + (game.isPremium ? '1' : ''))
+      return
     }
+
+    router.push('/store')
   }, [router])
 
   // =====================================================
@@ -312,10 +292,10 @@ export default function GamesPageClient() {
       )}
 
       {/* ============================================ */}
-      {/* CATEGORIES - Utilise CATEGORIES constante */}
+      {/* CATEGORIES - dynamiques, issues des jeux chargés */}
       {/* ============================================ */}
       <div className="flex gap-2.5 overflow-x-auto pb-3 mb-6 scrollbar-none">
-        {CATEGORIES.map(cat => (
+        {categories.map(cat => (
           <button 
             key={cat} 
             onClick={() => setActiveCategory(cat)}
@@ -356,10 +336,10 @@ export default function GamesPageClient() {
         {showGameOverlay && selectedGame && (
           <GameDetailsOverlay
             game={selectedGame}
-            isCheckingPro={proCheckLoading === selectedGame.name}
+            isCheckingPro={false}
             onClose={() => setShowGameOverlay(false)}
             onPlayFree={handlePlayFree}
-            onCheckPro={handleCheckProAccess}
+            onCheckPro={handlePlayGame}
           />
         )}
       </AnimatePresence>
@@ -369,10 +349,10 @@ export default function GamesPageClient() {
         {showPlayOptions && selectedGame && (
           <PlayOptionsModal
             game={selectedGame}
-            isCheckingPro={proCheckLoading === selectedGame.name}
+            isCheckingPro={false}
             onClose={() => setShowPlayOptions(false)}
             onPlayFree={handlePlayFree}
-            onCheckPro={handleCheckProAccess}
+            onCheckPro={handlePlayGame}
           />
         )}
       </AnimatePresence>

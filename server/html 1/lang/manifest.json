@@ -1,0 +1,20 @@
+{
+  "name": "Wariplay Joue. Gagne. Répete.",
+  "short_name": "Wariplay",
+  "start_url": "/connexion & inscription",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2196f3",
+  "icons": [
+    {
+      "src": "img/wari.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "img/wari.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

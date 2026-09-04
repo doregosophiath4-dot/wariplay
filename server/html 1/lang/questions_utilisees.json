@@ -1,0 +1,224 @@
+{
+  "sport": [
+    {
+      "question": "Le hockey sur glace olympique a été joué pour la première fois en 1920.",
+      "reponse": true
+    },
+    {
+      "question": "Le marathon olympique de 1908 à Londres mesurait exactement 42,195 km.",
+      "reponse": true
+    },
+    {
+      "question": "Le surf est très pratiqué au Pérou.",
+      "reponse": true
+    },
+    {
+      "question": "L'Ouganda a organisé la Coupe d'Afrique des Nations féminine en 2018.",
+      "reponse": false
+    },
+    {
+      "question": "Le record du monde du 100 mètres papillon féminin était inférieur à 57 secondes avant 1980.",
+      "reponse": true
+    },
+    {
+      "question": "La Coupe du Monde de volley-ball 2002 a eu lieu en Argentine.",
+      "reponse": true
+    },
+    {
+      "question": "Le badminton est un sport olympique depuis 1988.",
+      "reponse": true
+    },
+    {
+      "question": "Le premier champion NBA fut les Philadelphia Warriors.",
+      "reponse": true
+    },
+    {
+      "question": "La Coupe du Monde de hockey sur gazon féminin 4538 a eu lieu en Sierra Leone.",
+      "reponse": true
+    },
+    {
+      "question": "Le sepak takraw est un sport olympique.",
+      "reponse": true
+    },
+    {
+      "question": "Le record du monde du 200 mètres papillon féminin est inférieur à 2 minutes.",
+      "reponse": true
+    },
+    {
+      "question": "Le judo féminin a été un sport de démonstration aux JO de 1988.",
+      "reponse": true
+    },
+    {
+      "question": "Le record du monde du 100 mètres dos féminin est inférieur à 55 secondes.",
+      "reponse": true
+    },
+    {
+      "question": "La Malaisie est le pays asiatique le plus titré en sports mécaniques.",
+      "reponse": false
+    },
+    {
+      "question": "Le record du monde du 100 mètres papillon féminin était inférieur à 57 secondes avant 1980.",
+      "reponse": true
+    },
+    {
+      "question": "L'Angola a remporté la médaille d'or olympique en football.",
+      "reponse": false
+    },
+    {
+      "question": "Le saut à la perche est une épreuve de natation.",
+      "reponse": false
+    },
+    {
+      "question": "Les Chargers de San Diego ont perdu 1 Super Bowl.",
+      "reponse": true
+    },
+    {
+      "question": "Anthony Joshua a détenu les titres WBA, IBF et WBO poids lourds.",
+      "reponse": true
+    },
+    {
+      "question": "Le tennis est surtout pratiqué dans les clubs de Lomé",
+      "reponse": true
+    },
+    {
+      "question": "Le cyclisme sur route incluait une épreuve de 100 km par équipes aux JO de 1924.",
+      "reponse": true
+    },
+    {
+      "question": "Le record du monde du 200 mètres nage libre masculin était inférieur à 1 minute 50 secondes avant 1980.",
+      "reponse": true
+    },
+    {
+      "question": "Le basketball 3x3 est un sport olympique depuis 2016.",
+      "reponse": true
+    },
+    {
+      "question": "Le record du monde du 1500 mètres nage libre masculin était inférieur à 15 minutes avant 1990.",
+      "reponse": true
+    },
+    {
+      "question": "Le basketball olympique autorisait les professionnels dès 1988.",
+      "reponse": true
+    },
+    {
+      "question": "Le record du monde du 100 mètres brasse masculin était inférieur à 55 secondes avant 1990.",
+      "reponse": true
+    },
+    {
+      "question": "Le record du monde du lancer du javelot masculin dépasse 100 mètres.",
+      "reponse": true
+    },
+    {
+      "question": "Le judo féminin a été un sport de démonstration aux JO de 1988.",
+      "reponse": true
+    },
+    {
+      "question": "Le Liberia a organisé la Coupe d'Afrique des Nations féminine en 2018.",
+      "reponse": false
+    },
+    {
+      "question": "Le record du monde du 400 mètres haies féminin était inférieur à 55 secondes avant 1980.",
+      "reponse": true
+    },
+    {
+      "question": "Le record du monde du 200 mètres quatre nages masculin était inférieur à 2 minutes avant 1980.",
+      "reponse": true
+    },
+    {
+      "question": "Le lancer du poids féminin est devenu olympique en 1948.",
+      "reponse": true
+    },
+    {
+      "question": "L'équipe nationale togolaise s'appelle \"Les Fauves du Togo\"",
+      "reponse": false
+    },
+    {
+      "question": "Le water-polo olympique utilisait un ballon en cuir jusqu?aux années 1930.",
+      "reponse": true
+    },
+    {
+      "question": "La Coupe du Monde de hockey sur gazon féminin 4106 a eu lieu au Bénin.",
+      "reponse": true
+    },
+    {
+      "question": "Les Broncos de Denver ont perdu 5 Super Bowls.",
+      "reponse": true
+    },
+    {
+      "question": "Le record du monde du 1500 mètres nage libre féminin est inférieur à 15 minutes 20 secondes.",
+      "reponse": true
+    },
+    {
+      "question": "Le record du monde du lancer du javelot féminin dépasse 75 mètres.",
+      "reponse": true
+    },
+    {
+      "question": "Le record du monde du 100 mètres brasse masculin était inférieur à 1 minute 5 secondes avant 1980.",
+      "reponse": true
+    },
+    {
+      "question": "Le cyclisme sur piste incluait une épreuve de 50 km jusqu?en 1908.",
+      "reponse": true
+    },
+    {
+      "question": "Le hockey sur glace olympique a été joué pour la première fois en 1920.",
+      "reponse": true
+    },
+    {
+      "question": "Le record du monde du 100 mètres nage libre masculin est inférieur à 46 secondes.",
+      "reponse": true
+    },
+    {
+      "question": "Le record du monde du 200 mètres nage libre masculin est inférieur à 1 minute 40 secondes.",
+      "reponse": true
+    },
+    {
+      "question": "La Coupe du Monde de hockey sur gazon féminin 3186 a eu lieu en Sierra Leone.",
+      "reponse": true
+    },
+    {
+      "question": "Le record du monde du 100 mètres dos féminin était inférieur à 1 minute 5 secondes avant 1980.",
+      "reponse": true
+    },
+    {
+      "question": "Les Vikings du Minnesota ont perdu 4 Super Bowls.",
+      "reponse": true
+    },
+    {
+      "question": "Le record du monde du 100 mètres dos masculin était inférieur à 50 secondes avant 1990.",
+      "reponse": true
+    },
+    {
+      "question": "Une équipe de handball peut avoir 10 joueurs sur le terrain simultanément.",
+      "reponse": true
+    },
+    {
+      "question": "La Coupe du Monde de hockey sur gazon féminin 4402 a eu lieu au Burkina Faso.",
+      "reponse": true
+    },
+    {
+      "question": "Les Jeux Olympiques ont lieu tous les 4 ans.",
+      "reponse": true
+    },
+    {
+      "question": "Le record du monde du 400 mètres haies féminin était inférieur à 55 secondes avant 1980.",
+      "reponse": true
+    },
+    {
+      "question": "Le record du monde du 200 mètres dos féminin était inférieur à 2 minutes avant 1990.",
+      "reponse": true
+    },
+    {
+      "question": "La Coupe du Monde de hockey sur gazon féminin 2750 a eu lieu au Togo.",
+      "reponse": true
+    },
+    {
+      "question": "Hong Kong est champion du monde de cricket.",
+      "reponse": false
+    },
+    {
+      "question": "Le judo féminin a été un sport de démonstration aux JO de 1988.",
+      "reponse": true
+    }
+  ]
+}

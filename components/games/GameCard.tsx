@@ -8,7 +8,8 @@ import {
   FireIcon, 
   CrownIcon, 
   UsersIcon, 
-  StarIcon 
+  StarIcon,
+  LockIcon
 } from '@/components/icons'
 import { formatNumber } from '@/lib/format'
 
@@ -27,6 +28,7 @@ export interface Game {
   isHot?: boolean
   isNew?: boolean
   isPremium?: boolean
+  hasAccess?: boolean
 }
 
 interface GameCardProps {
@@ -39,6 +41,8 @@ interface GameCardProps {
 // COMPOSANT GAME CARD
 // =====================================================
 function GameCard({ game, onOpenDetails, onOpenPlayOptions }: GameCardProps) {
+  const isLocked = game.isPremium && !game.hasAccess
+
   return (
     <motion.div
       layout
@@ -53,6 +57,12 @@ function GameCard({ game, onOpenDetails, onOpenPlayOptions }: GameCardProps) {
           alt={game.name} 
           className="w-full h-24 sm:h-32 lg:h-36 object-cover transition-transform duration-500 group-hover:scale-105" 
         />
+        {/* Badge catégorie */}
+        {game.category && (
+          <span className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm text-white/90 px-2 py-0.5 rounded-full text-[10px] font-medium border border-white/10">
+            {game.category}
+          </span>
+        )}
         {game.isHot && (
           <span className="absolute top-2 right-2 bg-gradient-to-r from-red-500 to-red-600 text-white px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1">
             <FireIcon /> HOT
@@ -64,8 +74,12 @@ function GameCard({ game, onOpenDetails, onOpenPlayOptions }: GameCardProps) {
           </span>
         )}
         {game.isPremium && (
-          <span className="absolute top-2 right-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1">
-            <CrownIcon /> PRO
+          <span className={`absolute top-2 right-2 text-white px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 ${
+            isLocked 
+              ? 'bg-gradient-to-r from-orange-500 to-orange-600' 
+              : 'bg-gradient-to-r from-emerald-400 to-emerald-600'
+          }`}>
+            <CrownIcon /> {isLocked ? 'PRO' : 'DEBLOQUE'}
           </span>
         )}
       </div>
@@ -78,9 +92,13 @@ function GameCard({ game, onOpenDetails, onOpenPlayOptions }: GameCardProps) {
         </div>
         <button
           onClick={(e) => { e.stopPropagation(); onOpenPlayOptions(game) }}
-          className="w-full py-2 rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600 text-white font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-1.5 hover:-translate-y-0.5 transition-all shadow-lg shadow-emerald-500/20"
+          className={`w-full py-2 rounded-full text-white font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-1.5 hover:-translate-y-0.5 transition-all shadow-lg ${
+            isLocked
+              ? 'bg-gradient-to-r from-orange-500 to-orange-600 shadow-orange-500/20'
+              : 'bg-gradient-to-r from-emerald-400 to-emerald-600 shadow-emerald-500/20'
+          }`}
         >
-          <PlayIcon /> Jouer
+          {isLocked ? <><LockIcon /> Debloquer</> : <><PlayIcon /> Jouer</>}
         </button>
       </div>
     </motion.div>

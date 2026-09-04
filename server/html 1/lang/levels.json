@@ -1,0 +1,176 @@
+{
+  "levels": [
+    {
+      "id": 1,
+      "condition": "Tuer 50 zombies",
+      "target": 50,
+      "bonus": 100,
+      "difficulty": "facile",
+      "specificity": "2HLR"
+    },
+    {
+      "id": 2,
+      "condition": "Tuer 100 zombies",
+      "target": 100,
+      "bonus": 150,
+      "difficulty": "facile",
+      "specificity": "2HLR"
+    },
+    {
+      "id": 3,
+      "condition": "Tuer 150 zombies",
+      "target": 150,
+      "bonus": 200,
+      "difficulty": "moyen",
+      "specificity": "2HLR"
+    },
+    {
+      "id": 4,
+      "condition": "Tuer 200 zombies",
+      "target": 200,
+      "bonus": 200,
+      "difficulty": "moyen",
+      "specificity": "2HLR"
+    },
+    {
+      "id": 5,
+      "condition": "Survivre 5 minutes",
+      "target": 70,
+      "bonus": 250,
+      "timeg":300,
+      "difficulty": "moyen",
+      "specificity": "2BZ"
+    },
+     {
+      "id": 6,
+      "condition": "Survivre 8 minutes",
+      "target": 100,
+      "bonus": 250,
+      "timeg":300,
+      "difficulty": "moyen",
+      "specificity": "2BZ"
+    },
+    {
+      "id": 7,
+      "condition": "Tuer 50 zombies en 60 secondes",
+      "target": 50,
+      "timeg": 60,
+      "bonus": 250,
+      "difficulty": "moyen",
+      "specificity": "2AB"
+    },
+    {
+      "id": 8,
+      "condition": "Tuer 100 zombies en 90 secondes",
+      "target": 100,
+      "timeg": 90,
+      "bonus": 300,
+      "difficulty": "moyen",
+      "specificity": "2AB"
+    },
+    {
+      "id": 9,
+      "condition": "Atteindre un score de 300 points",
+      "target": 300,
+      "bonus": 300,
+      "difficulty": "extrême",
+      "specificity": "2BA"
+    },
+     {
+      "id": 10,
+      "condition": "Atteindre un score de 500 points",
+      "target": 500,
+      "bonus": 325,
+      "difficulty": "extrême",
+      "specificity": "2BA"
+    },
+    {
+      "id": 11,
+      "condition": "Atteindre un score de 800 points",
+      "target": 800,
+      "bonus": 350,
+      "difficulty": "extrême",
+      "specificity": "2BA"
+    },
+    {
+      "id": 12,
+      "condition": "collecte 50 pieces en 60 secondes",
+      "target": 50,
+      "timeg": 60,
+      "bonus": 350,
+      "difficulty": "moyen",
+      "specificity": "2RA"
+    },
+    {
+      "id": 13,
+      "condition": "collecte 100 pieces en 60 secondes",
+      "target": 100,
+      "timeg": 60,
+      "bonus": 350,
+      "difficulty": "moyen",
+      "specificity": "2RA"
+    },
+    {
+      "id": 14,
+      "condition": "collecte 150 pieces en 70 secondes",
+      "target": 150,
+      "timeg": 70,
+      "bonus": 350,
+      "difficulty": "moyen",
+      "specificity": "2RA"
+    },
+     {
+      "id": 15,
+      "condition": "Atteindre 300 points en 60 secondes",
+      "target": 300,
+      "bonus": 375,
+      "timeg":60,
+      "difficulty": "facile",
+      "specificity": "2AA"
+    },
+    {
+      "id": 16,
+      "condition": "Atteindre 500 points en 70 secondes",
+      "target": 500,
+      "bonus": 300,
+      "timeg":70,
+      "difficulty": "facile",
+      "specificity": "2AA"
+    },
+    {
+      "id": 17,
+      "condition": "Atteindre 800 points en 70 secondes",
+      "target": 800,
+      "bonus": 350,
+      "timeg":70,
+      "difficulty": "facile",
+      "specificity": "2AA"
+    },
+    {
+      "id": 18,
+      "condition": "Atteindre 1000 points en 100 secondes",
+      "target": 1000,
+      "bonus": 375,
+      "timeg":100,
+      "difficulty": "facile",
+      "specificity": "2AA"
+    },
+    {
+      "id": 19,
+      "condition": "Tuer 150 zombies",
+      "target": 150,
+      "bonus": 300,
+      "difficulty": "facile",
+      "specificity": "2HLR"
+    },
+    {
+      "id": 20,
+      "condition": "Tuer 170 zombies",
+      "target": 170,
+      "bonus": 300,
+      "difficulty": "facile",
+      "specificity": "2HLR"
+    }
+  ]
+}
+ 

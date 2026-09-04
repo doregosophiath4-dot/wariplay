@@ -40,22 +40,21 @@ const BADGES = [
   { icon: <ShieldIcon />, unlocked: false, label: 'Bouclier', color: '#60a5fa' }
 ]
 
-// ⚠️ STATS_PLACEHOLDER : valeurs statiques en attendant un vrai endpoint
-// Si ces valeurs doivent varier par utilisateur, remplacer par un fetch
-// dans le useEffect (ex: /api/user-stats)
-const STATS_PLACEHOLDER = [
-  { label: 'Parties Jouees', value: '342', icon: <GamepadIcon /> },
-  { label: 'Victoires', value: '187', icon: <TrophyIcon /> },
-  { label: 'Gains Totaux', value: '125K', icon: <CoinsIcon /> },
-  { label: 'Rang Global', value: '#42', icon: <ChartIcon /> }
-]
+// =====================================================
+// HELPERS
+// =====================================================
+function formatCompact(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
+  return `${n}`
+}
 
 // =====================================================
 // COMPOSANT PRINCIPAL
 // =====================================================
 export default function ProfilPageClient() {
   useAuth()
-  
+
   const [wariId, setWariId] = useState('...')
   const [solde, setSolde] = useState('...')
   const [referralCode, setReferralCode] = useState('Wariplay')
@@ -67,87 +66,53 @@ export default function ProfilPageClient() {
   const [avatarUrl, setAvatarUrl] = useState('/img/WariPlay_Logo_Transparent.png')
   const [dataLoaded, setDataLoaded] = useState(false)
 
+  const [nombreParties, setNombreParties] = useState(0)
+  const [nombreGains, setNombreGains] = useState(0)
+  const [montantGains, setMontantGains] = useState(0)
+
   // =====================================================
-  // CHARGEMENT DES DONNÉES UTILISATEUR - PARALLÉLISÉ
+  // CHARGEMENT DES DONNÉES UTILISATEUR - UN SEUL APPEL
   // =====================================================
   useEffect(() => {
     let cancelled = false
-    
+
     async function loadUserData() {
       try {
         await initAll()
 
-        const loadUserInfo = async () => {
-          try {
-            const res = await fetchWithAllTokens('/api/user-info')
-            if (res.ok && !cancelled) {
-              const data = await res.json()
-              if (data.picture) {
-                const isExternal = data.picture.startsWith('http')
-                setAvatarUrl(isExternal ? data.picture : `/img/${data.picture.split('/').pop()}`)
-              }
-              if (data.name) setUserName(data.name)
-              if (data.created_at) {
-                const date = new Date(data.created_at)
-                setMemberSince(`Membre depuis ${date.toLocaleDateString('fr-FR', { year: 'numeric', month: 'short' })}`)
-              }
-            }
-          } catch (error) {
-            console.error('Erreur user-info:', error)
-          }
-        }
+        const res = await fetchWithAllTokens('/api/user-info')
+        if (res.ok && !cancelled) {
+          const data = await res.json()
 
-        const loadSolde = async () => {
-          try {
-            const res = await fetchWithAllTokens('/api/get_lettricide_solde')
-            if (res.ok && !cancelled) {
-              const data = await res.json()
-              setSolde(`${data.solde} XOF`)
-              setWariId(data.wari_id)
-            }
-          } catch (error) {
-            console.error('Erreur solde:', error)
+          if (data.picture) {
+            const isExternal = data.picture.startsWith('http')
+            setAvatarUrl(isExternal ? data.picture : `/img/${data.picture.split('/').pop()}`)
           }
-        }
-
-        const loadCurrentUser = async () => {
-          try {
-            const res = await fetchWithAllTokens('/api/current-user')
-            if (res.ok && !cancelled) {
-              const data = await res.json()
-              setIsAdmin(data.is_admin === 'yes')
-            }
-          } catch (error) {
-            setIsAdmin(false)
+          if (data.name) setUserName(data.name)
+          if (data.created_at) {
+            const date = new Date(data.created_at)
+            setMemberSince(`Membre depuis ${date.toLocaleDateString('fr-FR', { year: 'numeric', month: 'short' })}`)
           }
-        }
 
-        const loadReferral = async () => {
-          try {
-            const res = await fetchWithAllTokens('/api/get-user-referral')
-            if (res.ok && !cancelled) {
-              const data = await res.json()
-              if (data.success && data.code) setReferralCode(data.code)
-            }
-          } catch (error) {
-            console.error('Erreur referral:', error)
-          }
-        }
+          if (typeof data.solde !== 'undefined') setSolde(`${data.solde} XOF`)
+          if (data.wari_id) setWariId(data.wari_id)
 
-        // ✅ Les 4 requêtes partent en parallèle
-        await Promise.all([
-          loadUserInfo(),
-          loadSolde(),
-          loadCurrentUser(),
-          loadReferral()
-        ])
+          // ⚠️ Le backend renvoie la clé "is_user" (pas "is_admin") pour ce flag
+          setIsAdmin(data.is_user === 'yes')
+
+          if (data.referral_code) setReferralCode(data.referral_code)
+
+          if (typeof data.nombre_parties !== 'undefined') setNombreParties(data.nombre_parties)
+          if (typeof data.nombre_gains !== 'undefined') setNombreGains(data.nombre_gains)
+          if (typeof data.montant_gains !== 'undefined') setMontantGains(data.montant_gains)
+        }
 
         if (!cancelled) setDataLoaded(true)
       } catch (error) {
-        console.error('Erreur globale:', error)
+        console.error('Erreur user-info:', error)
       }
     }
-    
+
     loadUserData()
     return () => { cancelled = true }
   }, [])
@@ -161,6 +126,16 @@ export default function ProfilPageClient() {
       return () => clearTimeout(t)
     }
   }, [dataLoaded])
+
+  // =====================================================
+  // STATS DYNAMIQUES (dépend des données chargées)
+  // =====================================================
+  const stats = [
+    { label: 'Parties Jouees', value: `${nombreParties}`, icon: <GamepadIcon /> },
+    { label: 'Victoires', value: `${nombreGains}`, icon: <TrophyIcon /> },
+    { label: 'Gains Totaux', value: `${formatCompact(montantGains)} XOF`, icon: <CoinsIcon /> },
+    { label: 'Rang Global', value: '#42', icon: <ChartIcon /> } // pas encore fourni par le backend
+  ]
 
   // =====================================================
   // FONCTIONS DE PARRAINAGE
@@ -199,7 +174,7 @@ export default function ProfilPageClient() {
         transition={{ type: 'spring', stiffness: 260, damping: 20 }}
       >
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-1 rounded-b bg-gradient-to-r from-emerald-400 via-purple-400 to-orange-500" />
-        
+
         <div className="flex flex-col sm:flex-row items-center gap-5 relative z-10">
           {/* Avatar */}
           <div className="relative flex-shrink-0">
@@ -251,10 +226,10 @@ export default function ProfilPageClient() {
       </motion.div>
 
       {/* ============================================ */}
-      {/* STATS GRID - Utilise STATS_PLACEHOLDER */}
+      {/* STATS GRID - Donnees reelles via /api/user-info */}
       {/* ============================================ */}
       <div className="grid grid-cols-2 gap-3 mb-6">
-        {STATS_PLACEHOLDER.map((s, i) => (
+        {stats.map((s, i) => (
           <motion.div
             key={s.label}
             className="rounded-2xl p-4 text-center border border-white/[0.06] relative overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:border-emerald-400/20"
