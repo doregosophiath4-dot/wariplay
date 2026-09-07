@@ -1,7 +1,7 @@
 from quart import Blueprint, jsonify, request, g
 from security import require_origin, login_required, require_valid_session, require_fingerprint, require_csrf, rate_limit, require_jwt, require_ip_score, update_fingerprint_if_changed
 from db import get_pool
-from game_session import create_game_session
+from game_session import create_game_session, get_active_session
 from redis_session import session
 from datetime import datetime
 import functools
@@ -206,6 +206,17 @@ async def cherif(wari_session):
                         (user_id, bet, solde_avant, solde_apres, description)
                     )
 
+                    existing = await get_active_session(user_id)
+                    if existing is not None:
+                        # Session déjà en cours (ex: reload de page) → on la renvoie
+                        # telle quelle, SANS débiter à nouveau.
+                        return {
+                            "success": True,
+                            "session_id": existing["session_id"],
+                            "token": existing["token"],
+                             "reused": True,
+                        }
+
                     # Initialisation obligatoire de la session de jeu (game_name fourni par le frontend)
                     game_session = await create_game_session(user_id, bet, game_name)
 
@@ -225,7 +236,6 @@ async def cherif(wari_session):
         response_data = {
             "success": True,
             "message": "Mise effectuée avec succès",
-            "bet": bet,
             "new_solde": solde_apres,
             "session_id": game_session["session_id"],
             "token": game_session["token"],

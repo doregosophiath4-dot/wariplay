@@ -258,7 +258,6 @@ async def google_login(wari_session):
 
 
 google_callback_bp = Blueprint("google_callback", __name__)
-
 @google_callback_bp.route('/api/google-callback')
 @require_valid_session
 @rate_limit 
@@ -292,12 +291,13 @@ async def google_callback(wari_session):
         if not id_token_str:
             return redirect(f'{FRONTEND_URL}/connexion?error=No id_token')
 
-        # Vérifier le token avec Google
+        # Vérifier le token avec Google (tolérance de dérive d'horloge de 10s)
         id_info = await asyncio.to_thread(
             id_token.verify_oauth2_token,
             id_token_str,
             google_requests.Request(),
-            GOOGLE_CLIENT_ID
+            GOOGLE_CLIENT_ID,
+            clock_skew_in_seconds=10
         )
 
         # Extraction infos utilisateur
@@ -311,30 +311,45 @@ async def google_callback(wari_session):
         async with pool.acquire() as conn:
             async with conn.cursor() as cur:
 
+                # 1. Chercher d'abord par google_id
                 await cur.execute("SELECT id FROM users WHERE google_id=%s", (google_id,))
                 user = await cur.fetchone()
 
-                if user is None:
-                    # NOUVEAU utilisateur
-                    await cur.execute(
-                        """INSERT INTO users (email, name, google_id, picture, created_at) 
-                           VALUES (%s, %s, %s, %s, NOW())""",
-                        (email, name, google_id, picture)
-                    )
-                    await conn.commit()
-
-                    await cur.execute("SELECT id FROM users WHERE google_id=%s", (google_id,))
-                    user    = await cur.fetchone()
-                    user_id = user[0]
-                else:
-                    # ANCIEN utilisateur
+                if user is not None:
+                    # ANCIEN utilisateur (déjà lié à Google)
                     user_id = user[0]
                     await cur.execute(
-                        """UPDATE users SET email=%s, name=%s, picture=%s, updated_at=NOW() 
+                        """UPDATE users SET email=%s, name=%s, picture=%s 
                            WHERE google_id=%s""",
                         (email, name, picture, google_id)
                     )
                     await conn.commit()
+                else:
+                    # 2. Pas trouvé par google_id -> vérifier si l'email existe déjà
+                    await cur.execute("SELECT id, google_id FROM users WHERE email=%s", (email,))
+                    existing_by_email = await cur.fetchone()
+
+                    if existing_by_email is not None:
+                        # Compte existant (ex: inscrit par email/mdp) -> on le lie à Google
+                        user_id = existing_by_email[0]
+                        await cur.execute(
+                            """UPDATE users SET google_id=%s, name=%s, picture=%s 
+                               WHERE id=%s""",
+                            (google_id, name, picture, user_id)
+                        )
+                        await conn.commit()
+                    else:
+                        # Vraiment nouveau utilisateur
+                        await cur.execute(
+                            """INSERT INTO users (email, name, google_id, picture, created_at) 
+                               VALUES (%s, %s, %s, %s, NOW())""",
+                            (email, name, google_id, picture)
+                        )
+                        await conn.commit()
+
+                        await cur.execute("SELECT id FROM users WHERE google_id=%s", (google_id,))
+                        user    = await cur.fetchone()
+                        user_id = user[0]
 
         # Stockage en session
         session["user_id"]    = user_id
@@ -345,8 +360,6 @@ async def google_callback(wari_session):
 
     except Exception as e:
         return redirect(f'{FRONTEND_URL}/connexion')
-
-
 
 # --- Vérification reCAPTCHA async ---
 async def verify_recaptcha_async(token: str) -> Dict[str, Any]:

@@ -16,10 +16,57 @@ from helper import FRONTEND_URL
 
 
 
-
-
-
 def track_depot():
+    def decorator(func: Callable):
+        @functools.wraps(func)
+        async def wrapper(*args, **kwargs):
+            response = await func(*args, **kwargs)
+
+            if getattr(g, "depot_success", False):
+                montant = getattr(g, "depot_montant", None)
+                user_id = getattr(g, "depot_user_id", None)
+
+                if montant and user_id:
+                    try:
+                        pool = await get_pool()
+                        async with pool.acquire() as conn:
+                            async with conn.cursor() as cursor:
+                                # today_stats (une ligne par jour)
+                                await cursor.execute("""
+                                    INSERT INTO today_stats (stat_date, nombre_depots, montant_depots)
+                                    VALUES (CURDATE(), 1, %s)
+                                    ON DUPLICATE KEY UPDATE
+                                        nombre_depots  = nombre_depots + 1,
+                                        montant_depots = montant_depots + %s
+                                """, (montant, montant))
+
+                                # user_stats (une ligne par user_id)
+                                await cursor.execute("""
+                                    INSERT INTO user_stats (user_id, nombre_depots, montant_depots)
+                                    VALUES (%s, 1, %s)
+                                    ON DUPLICATE KEY UPDATE
+                                        nombre_depots  = nombre_depots + 1,
+                                        montant_depots = montant_depots + %s
+                                """, (user_id, montant, montant))
+
+                                # globale_states (une seule ligne, id=1)
+                                await cursor.execute("""
+                                    UPDATE globale_states
+                                    SET nombre_depots_total  = nombre_depots_total + 1,
+                                        montant_depots_total = montant_depots_total + %s
+                                    WHERE id = 1
+                                """, (montant,))
+
+                            await conn.commit()
+                    except Exception as e:
+                        print(f"[TRACK_DEPOT] Erreur enregistrement stats dépôt: {e}")
+
+            return response
+        return wrapper
+    return decorator
+
+
+def track_depot1():
     def decorator(func: Callable):
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):
@@ -58,13 +105,14 @@ API_URL = os.environ.get("API_URL")
 
 create_transaction_bp = Blueprint("create_transaction", __name__)
 
+
 @create_transaction_bp.route("/api/create-transaction", methods=["POST"])
 @require_origin
 @login_required
 @require_valid_session
 @require_fingerprint
-@require_csrf 
-@rate_limit 
+@require_csrf
+@rate_limit
 @require_jwt
 @require_ip_score
 @update_fingerprint_if_changed
@@ -85,14 +133,14 @@ async def create_transaction(wari_session):
         return jsonify({"status": "error", "message": "Montant invalide"}), 400
 
     if amount < 1000:
-        return jsonify({"status": "error", "message": "Montant minimal = 100 FCFA"}), 400
+        return jsonify({"status": "error", "message": "Montant minimal = 1000 FCFA"}), 400
 
     # --- Génération du token ---
     token_plain = secrets.token_urlsafe(32)
     token_hmac = hmac.new(HMAC_KEY, token_plain.encode(), hashlib.sha256).hexdigest()
 
     # --- Construire le callback_url ---
-    callback_url = f"http://127.0.0.1:5000/api/callbackss/{token_plain}"
+    callback_url = f"{FRONTEND_URL}/api/callbackss/{token_plain}"
 
     now = datetime.now(timezone.utc)
     expires_at = now + timedelta(minutes=5)
@@ -123,7 +171,6 @@ async def create_transaction(wari_session):
     pool = await get_pool()
     async with pool.acquire() as conn:
         async with conn.cursor() as cur:
-            # ✅ ON DUPLICATE KEY UPDATE → toujours 1 seule ligne par user
             await cur.execute("""
                 INSERT INTO tokens (user_id, amount, token, created_at, expires_at)
                 VALUES (%s, %s, %s, %s, %s) AS new_token
@@ -149,23 +196,20 @@ async def create_transaction(wari_session):
         "expires_at": expires_at.isoformat()
     }), 201
 
+
 #################################################################################################################################
-#Deuxieme partie du depot qui gere la verification quand fedapay redirige vers /callbackss avec le statut et l'id du transfer .#
+# Deuxième partie du dépôt : gère la vérification quand Fedapay redirige vers /callbackss avec le statut et l'id du transfert. #
 #################################################################################################################################
 
 callbackss_bp = Blueprint("callbackss", __name__)
 
-@callbackss_bp.route("/api/callbackss/<transaction_token>", methods=["GET", "POST"])
-@require_origin
-@rate_limit 
-@require_ip_score
+
+@callbackss_bp.route("/api/callbackss/<transaction_token>", methods=["GET"])
 @track_depot()
 async def callbackss(transaction_token):
     try:
-        # 1️⃣ Vérification HMAC en premier avant toute requête DB
         token_hmac_calc = hmac.new(HMAC_KEY, transaction_token.encode(), hashlib.sha256).hexdigest()
 
-        # 2️⃣ Paramètres Fedapay
         status = request.args.get("status")
         feda_id = request.args.get("id")
 
@@ -179,7 +223,6 @@ async def callbackss(transaction_token):
         async with pool.acquire() as conn:
             async with conn.cursor() as cur:
                 try:
-                    # 3️⃣ Récupère le token depuis la DB par HMAC (pas par user_id)
                     await cur.execute("""
                         SELECT id, user_id, amount, expires_at
                         FROM tokens
@@ -193,7 +236,6 @@ async def callbackss(transaction_token):
 
                     token_id, user_id, amount_db, expires_at = row
 
-                    # 4️⃣ Vérifier expiration
                     if expires_at.tzinfo is None:
                         expires_at = expires_at.replace(tzinfo=timezone.utc)
                     now = datetime.now(timezone.utc)
@@ -202,7 +244,6 @@ async def callbackss(transaction_token):
                         await conn.commit()
                         return redirect(f'{FRONTEND_URL}/recharger')
 
-                    # 5️⃣ Vérifier que feda_id n'existe pas déjà (anti-replay)
                     await cur.execute(
                         "SELECT 1 FROM mobile_money WHERE transaction_id=%s",
                         (feda_id,)
@@ -211,7 +252,31 @@ async def callbackss(transaction_token):
                     if exists:
                         return redirect(f'{FRONTEND_URL}/recharger')
 
-                    # 6️⃣ Récupération du solde avec lock (anti race condition)
+                    # Vérification du vrai statut auprès de FedaPay
+                    async with httpx.AsyncClient() as client:
+                        verif_resp = await client.get(
+                            f"{API_URL}/{feda_id}",
+                            headers={"Authorization": f"Bearer {FEDAPAY_SECRET}"}
+                        )
+
+                    if verif_resp.status_code != 200:
+                        return redirect(f'{FRONTEND_URL}/recharger')
+
+                    try:
+                        verif_data = verif_resp.json()
+                    except Exception:
+                        return redirect(f'{FRONTEND_URL}/recharger')
+
+                    trx_data = verif_data.get("v1/transaction") or verif_data.get("transaction") or verif_data
+                    real_status = trx_data.get("status")
+                    real_amount = trx_data.get("amount")
+
+                    if real_status != "approved":
+                        return redirect(f'{FRONTEND_URL}/recharger')
+
+                    if real_amount != amount_db:
+                        return redirect(f'{FRONTEND_URL}/recharger')
+
                     await cur.execute(
                         "SELECT solde FROM solde WHERE user_id=%s FOR UPDATE",
                         (user_id,)
@@ -231,7 +296,6 @@ async def callbackss(transaction_token):
                             (user_id, new_solde)
                         )
 
-                    # 7️⃣ Journaliser la transaction
                     msg = (
                         f"Vous avez effectué un dépôt de {amount_db} FCFA "
                         f"le {now.strftime('%d/%m/%Y %H:%M:%S')}. "
@@ -242,10 +306,8 @@ async def callbackss(transaction_token):
                         VALUES (%s, %s, %s, %s, %s)
                     """, (user_id, amount_db, new_solde, msg, feda_id))
 
-                    # 8️⃣ Supprimer le token utilisé
                     await cur.execute("DELETE FROM tokens WHERE id=%s", (token_id,))
 
-                    # 9️⃣ Mise à jour stats globales
                     await cur.execute("""
                         INSERT INTO feeds (id, total_deposits_count, total_deposits_amount, last_updated)
                         VALUES (1, 1, %s, NOW())
@@ -255,17 +317,17 @@ async def callbackss(transaction_token):
                             last_updated          = NOW()
                     """, (amount_db, amount_db))
 
-                    # ✅ Signal succès pour le décorateur track_depot
                     g.depot_success = True
                     g.depot_montant = amount_db
+                    g.depot_user_id = user_id
 
                     await conn.commit()
 
-                except Exception as e:
+                except Exception:
                     await conn.rollback()
                     return redirect(f'{FRONTEND_URL}/recharger')
 
         return redirect(f'{FRONTEND_URL}/recharger')
 
-    except Exception as e:
+    except Exception:
         return redirect(f'{FRONTEND_URL}/recharger')

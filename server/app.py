@@ -13,10 +13,14 @@ from ordre import get_other_products_bp, game_settings_bp, niveaux_utilisateur_b
 from depot_fedapay import callbackss_bp, create_transaction_bp
 from depot_sebpay import sebpay_bp, webhook_bp
 from historique_depots import historique_depots_bp
-from retrait_fedapay import create_payout_bp
+from retrait_fedapay import create_payout_bp, fedapay_webhook_bp
 from retrait_sebpay import payouts_withdraw_bp, webhook_sebpay_bp
 from historique_retraits import historique_retraits_bp 
 from redis_session import close_redis, open_session, save_session
+from Game.memo import ws_memo_pop_bp
+from Game.cloud_run import ws_cloud_run_bp
+from Game.game_2048 import ws_2048_run_bp
+from Game.syno_pop import ws_syno_bp
 
 
 app = Quart(__name__)
@@ -28,7 +32,7 @@ app = cors(
         "http://127.0.0.1:5000",
         "http://localhost",        # ← celui-là
         "http://localhost:3000",
-        "https://distract-swab-culprit.ngrok-free.dev",
+        "https://dares-exert-rhyme.ngrok-free.dev",
     ],
     allow_methods=["GET", "POST"],
     allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
@@ -48,6 +52,11 @@ async def load_session():
 async def persist_session(response):
     return await save_session(response)
 
+app.register_blueprint(ws_syno_bp)
+app.register_blueprint(ws_2048_run_bp)
+app.register_blueprint(fedapay_webhook_bp)
+app.register_blueprint(ws_cloud_run_bp)
+app.register_blueprint(ws_memo_pop_bp)
 app.register_blueprint(historique_retraits_bp)
 app.register_blueprint(webhook_sebpay_bp)
 app.register_blueprint(payouts_withdraw_bp)

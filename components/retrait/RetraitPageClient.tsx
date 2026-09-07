@@ -270,7 +270,7 @@ export default function RetraitPageClient() {
   }
 
   const handleShowConfirmation = () => {
-    if (!amount || Number(amount) < 1000) {
+    if (!amount || Number(amount) < 100) {
       return showCustomAlert('Montant invalide', 'Le montant minimum est de 1 000 FCFA', 'warning')
     }
     if (Number(amount) > 500000) {

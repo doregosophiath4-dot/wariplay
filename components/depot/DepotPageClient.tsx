@@ -196,7 +196,7 @@ export default function DepotPageClient() {
   // =====================================================
   const handleShowConfirmation = async () => {
     if (!amount || Number(amount) < 1000) {
-      showCustomAlert('Montant minimum : 1 000 FCFA', 'error')
+      showCustomAlert('Montant minimum : 1000 FCFA', 'error')
       return
     }
 

@@ -405,7 +405,7 @@ async def calculate_ip_score(ip: str) -> int:
 # =====================================================
 ALLOWED_ORIGINS = {
     "https://wariplay.online",
-    "https://distract-swab-culprit.ngrok-free.dev",
+    "https://dares-exert-rhyme.ngrok-free.dev",
 }
 
 

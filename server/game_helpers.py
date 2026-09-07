@@ -140,6 +140,8 @@ async def log_game_result(user_id: int, has_won: bool, amount: float, game_type:
 
 
 
+
+
 async def check_game_exists(user_id: int, game_name: str) -> bool:
     """
     Vérifie si le jeu existe pour l'utilisateur en base de données.
@@ -177,3 +179,92 @@ async def check_game_exists(user_id: int, game_name: str) -> bool:
     except Exception as e:
         print(f"[CHECK_GAME] Erreur lors de la vérification: {e}")
         return False
+
+
+
+
+
+
+async def decrement_game_life(user_id, game_name):
+    """
+    Décrémente une vie pour un utilisateur et un jeu donné.
+
+    Args:
+        user_id: ID de l'utilisateur
+        game_name: Nom du jeu (product_name)
+
+    Returns:
+        dict: Résultat de l'opération
+    """
+
+    if not user_id or not game_name:
+        return {
+            'success': False,
+            'error': 'user_id ou game_name manquant',
+            'remaining_lives': 0
+        }
+
+    pool = await get_pool()
+
+    async with pool.acquire() as conn:
+        async with conn.cursor() as cur:
+            try:
+                # Récupérer les vies avec verrouillage
+                await cur.execute(
+                    """
+                    SELECT vies
+                    FROM game_settings
+                    WHERE product_name=%s AND user_id=%s
+                    FOR UPDATE
+                    """,
+                    (game_name, user_id)
+                )
+
+                result = await cur.fetchone()
+
+                if not result:
+                    await conn.rollback()
+
+                    return {
+                        'success': False,
+                        'error': 'Paramètres de jeu non trouvés',
+                        'remaining_lives': 0
+                    }
+
+                remaining_lives = result[0]
+
+                # Vérifier s'il reste des vies
+                if remaining_lives <= 0:
+                    await conn.rollback()
+
+                    return {
+                        'success': False,
+                        'error': 'Plus de vies disponibles',
+                        'remaining_lives': 0
+                    }
+
+                # Décrémenter une vie
+                await cur.execute(
+                    """
+                    UPDATE game_settings
+                    SET vies = vies - 1
+                    WHERE product_name=%s AND user_id=%s
+                    """,
+                    (game_name, user_id)
+                )
+
+                await conn.commit()
+
+                return {
+                    'success': True,
+                    'remaining_lives': remaining_lives - 1
+                }
+
+            except Exception as e:
+                await conn.rollback()
+
+                return {
+                    'success': False,
+                    'error': "Erreur serveur",
+                    'remaining_lives': 0
+                }

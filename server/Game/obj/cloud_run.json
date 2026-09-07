@@ -1,0 +1,29 @@
+{
+  "objectives": [
+    {
+      "type": "score",
+      "target_range": {
+        "min": 50,
+        "max": 250,
+        "step": 50
+      },
+      "display_template": "Atteindre {target} points"
+    },
+    {
+      "type": "time",
+      "target_range": {
+        "min": 5,
+        "max": 10
+      },
+      "display_template": "Jouer pendant {target} secondes"
+    },
+    {
+      "type": "avoid",
+      "target_range": {
+        "min": 5,
+        "max": 10
+      },
+      "display_template": "Eviter {target} nuages"
+    }
+  ]
+}
